@@ -58,7 +58,7 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 <path d="m9 12 2 2 4-4" />
               </svg>
             </div>
-            <span className="hidden text-xl font-bold sm:inline-block">PharmaLeads</span>
+            <span className="hidden text-xl font-bold sm:inline-block">Pavittar Pharma</span>
           </Link>
         </div>
 
@@ -98,16 +98,16 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src="/avatar.jpg" alt="User" />
-                  <AvatarFallback>AD</AvatarFallback>
+                  <AvatarFallback>RC</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 z-50">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Admin User</p>
+                  <p className="text-sm font-medium leading-none">Rishul Chanana</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    admin@pharma-leads.com
+                    admin@pavittar-pharma.com
                   </p>
                 </div>
               </DropdownMenuLabel>

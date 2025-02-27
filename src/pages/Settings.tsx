@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Bell,
@@ -39,6 +38,11 @@ const Settings: React.FC = () => {
         <p className="text-muted-foreground">
           Manage your account settings and preferences
         </p>
+      </div>
+
+      <div className="rounded-md bg-muted/50 p-4 text-center">
+        <p className="font-medium">Pavittar Pharmaceuticals CRM</p>
+        <p className="text-sm text-muted-foreground">A Rishul Chanana Production</p>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
@@ -107,8 +111,8 @@ const Settings: React.FC = () => {
                 <CardContent className="space-y-6">
                   <div className="flex flex-col items-center sm:flex-row sm:items-start gap-4">
                     <Avatar className="h-16 w-16">
-                      <AvatarImage src="https://api.dicebear.com/7.x/initials/svg?seed=Admin User" alt="Admin User" />
-                      <AvatarFallback>AD</AvatarFallback>
+                      <AvatarImage src="https://api.dicebear.com/7.x/initials/svg?seed=Rishul Chanana" alt="Rishul Chanana" />
+                      <AvatarFallback>RC</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 space-y-1 text-center sm:text-left">
                       <h3 className="font-medium">Profile Image</h3>
@@ -129,11 +133,11 @@ const Settings: React.FC = () => {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="name">Name</Label>
-                      <Input id="name" value="Admin User" />
+                      <Input id="name" value="Rishul Chanana" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" value="admin@pharma-leads.com" />
+                      <Input id="email" value="rishul@pavittar-pharma.com" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role">Role</Label>
@@ -323,7 +327,7 @@ const Settings: React.FC = () => {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="company-name">Company Name</Label>
-                      <Input id="company-name" value="PharmaLeads Solutions" />
+                      <Input id="company-name" value="Pavittar Pharmaceuticals" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="industry">Industry</Label>
@@ -341,7 +345,7 @@ const Settings: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="company-email">Company Email</Label>
-                      <Input id="company-email" value="contact@pharmaleads.com" />
+                      <Input id="company-email" value="contact@pavittar-pharma.com" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="company-phone">Company Phone</Label>
@@ -383,7 +387,11 @@ const Settings: React.FC = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="website">Website</Label>
-                    <Input id="website" placeholder="https://pharmaleads.com" />
+                    <Input id="website" placeholder="https://pavittar-pharma.com" />
+                  </div>
+                  
+                  <div className="rounded-md bg-muted p-4 text-center">
+                    <p className="text-sm">A Rishul Chanana Production</p>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">

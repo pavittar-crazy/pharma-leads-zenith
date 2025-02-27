@@ -169,7 +169,7 @@ const Index: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back to PharmaLeads CRM. Here's what's happening today.
+            Welcome back to Pavittar Pharmaceuticals CRM. Here's what's happening today.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -179,6 +179,18 @@ const Index: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      <Card className="border-none shadow-none bg-muted/50">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-medium">Pavittar Pharmaceuticals</h2>
+              <p className="text-sm text-muted-foreground">A Rishul Chanana Production</p>
+            </div>
+            <Badge variant="outline" className="px-3 py-1">Custom Enterprise Build</Badge>
+          </div>
+        </CardContent>
+      </Card>
 
       <DashboardCards loading={loading} />
 
@@ -436,6 +448,11 @@ const Index: React.FC = () => {
             </div>
           </div>
         </CardContent>
+        <CardFooter className="border-t p-4 text-center text-sm text-muted-foreground">
+          <div className="w-full">
+            Pavittar Pharmaceuticals CRM - A Rishul Chanana Production
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );

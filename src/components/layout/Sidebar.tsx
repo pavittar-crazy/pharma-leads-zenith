@@ -130,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <path d="m9 12 2 2 4-4" />
               </svg>
             </div>
-            <span className="text-xl font-bold">PharmaLeads</span>
+            <span className="text-xl font-bold">Pavittar Pharma</span>
           </div>
           
           {isMobile && (
@@ -206,6 +206,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     <span>{item.title}</span>
                   </NavLink>
                 ))}
+              </div>
+            </div>
+            
+            <Separator className="mx-4" />
+            
+            <div className="p-4 mt-6">
+              <div className="rounded-md bg-muted p-3">
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-xs text-muted-foreground mb-1">A custom build for</p>
+                  <p className="font-semibold">Pavittar Pharmaceuticals</p>
+                  <p className="text-xs text-muted-foreground mt-2">A Rishul Chanana Production</p>
+                </div>
               </div>
             </div>
           </div>
