@@ -72,7 +72,7 @@ const CustomerSegmentation: React.FC = () => {
                   <TableRow>
                     <TableCell>
                       <div className="font-medium">High Value Hospitals</div>
-                      <div className="text-xs text-muted-foreground">Hospitals with annual orders >₹50L</div>
+                      <div className="text-xs text-muted-foreground">Hospitals with annual orders &gt;₹50L</div>
                     </TableCell>
                     <TableCell>
                       <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400">
@@ -308,7 +308,7 @@ const CustomerSegmentation: React.FC = () => {
                     <Button variant="outline" className="w-full justify-start text-left h-auto py-2">
                       <div>
                         <p className="font-medium">High Value Customers</p>
-                        <p className="text-xs text-muted-foreground">Order value > ₹5,00,000</p>
+                        <p className="text-xs text-muted-foreground">Order value &gt; ₹5,00,000</p>
                       </div>
                     </Button>
                     <Button variant="outline" className="w-full justify-start text-left h-auto py-2">
