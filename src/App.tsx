@@ -10,6 +10,7 @@ import Navbar from "./components/layout/Navbar";
 import Sidebar from "./components/layout/Sidebar";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
+import LeadManagement from "./pages/LeadManagement";
 import Manufacturers from "./pages/Manufacturers";
 import Orders from "./pages/Orders";
 import Performance from "./pages/Performance";
@@ -35,6 +36,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/leads" element={<Leads />} />
+                  <Route path="/lead-management" element={<LeadManagement />} />
                   <Route path="/manufacturers" element={<Manufacturers />} />
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/performance" element={<Performance />} />

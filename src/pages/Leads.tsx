@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   PlusCircle,
   Download,
@@ -9,7 +10,8 @@ import {
   List,
   Grid,
   UserPlus,
-  MessageSquare
+  MessageSquare,
+  Target
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +61,12 @@ const Leads: React.FC = () => {
             <PlusCircle className="h-4 w-4" />
             <span>Add New Lead</span>
           </Button>
+          <Link to="/lead-management">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              <span>Advanced Tools</span>
+            </Button>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon">
@@ -107,6 +115,11 @@ const Leads: React.FC = () => {
             </Button>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-md bg-muted/50 p-4 text-center">
+        <p className="font-medium">Pavittar Pharmaceuticals CRM</p>
+        <p className="text-sm text-muted-foreground">A Rishul Chanana Production</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
