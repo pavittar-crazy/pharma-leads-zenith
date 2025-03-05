@@ -1,0 +1,719 @@
+[plugin:vite:react-swc] × the name `uuidv4` is defined multiple times
+     ╭─[/home/runner/workspace/src/services/crmService.ts:2:1]
+   1 │ 
+   2 │ import { v4 as uuidv4 } from 'uuid';
+     ·                ───┬──
+     ·                   ╰── previous definition of `uuidv4` here
+   3 │ 
+   4 │ // Define types for our CRM data
+   5 │ export interface Lead {
+   6 │   id: string;
+   7 │   name: string;
+   8 │   company: string;
+   9 │   email: string;
+  10 │   phone: string;
+  11 │   status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed';
+  12 │   value: number;
+  13 │   products: string[];
+  14 │   notes: string;
+  15 │   createdAt: string;
+  16 │   updatedAt: string;
+  17 │ }
+  18 │ 
+  19 │ export interface Manufacturer {
+  20 │   id: string;
+  21 │   name: string;
+  22 │   contactPerson: string;
+  23 │   email: string;
+  24 │   phone: string;
+  25 │   address: string;
+  26 │   products: string[];
+  27 │   status: 'active' | 'inactive';
+  28 │   notes: string;
+  29 │   createdAt: string;
+  30 │ }
+  31 │ 
+  32 │ export interface Order {
+  33 │   id: string;
+  34 │   leadId: string;
+  35 │   leadName: string;
+  36 │   products: {
+  37 │     id: string;
+  38 │     name: string;
+  39 │     quantity: number;
+  40 │     price: number;
+  41 │   }[];
+  42 │   totalAmount: number;
+  43 │   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  44 │   paymentStatus: 'unpaid' | 'partial' | 'paid';
+  45 │   createdAt: string;
+  46 │   updatedAt: string;
+  47 │ }
+  48 │ 
+  49 │ export interface Product {
+  50 │   id: string;
+  51 │   name: string;
+  52 │   manufacturer: string;
+  53 │   category: string;
+  54 │   price: number;
+  55 │   stock: number;
+  56 │   description: string;
+  57 │ }
+  58 │ 
+  59 │ // Initialize local storage or get existing data
+  60 │ const getStorageData = <T>(key: string, initialValue: T[]): T[] => {
+  61 │   if (typeof window === 'undefined') {
+  62 │     return initialValue;
+  63 │   }
+  64 │   
+  65 │   try {
+  66 │     const item = window.localStorage.getItem(key);
+  67 │     return item ? JSON.parse(item) : initialValue;
+  68 │   } catch (error) {
+  69 │     console.error(`Error reading localStorage key "${key}":`, error);
+  70 │     return initialValue;
+  71 │   }
+  72 │ };
+  73 │ 
+  74 │ // Save data to local storage
+  75 │ const setStorageData = <T>(key: string, value: T[]): void => {
+  76 │   try {
+  77 │     if (typeof window !== 'undefined') {
+  78 │       window.localStorage.setItem(key, JSON.stringify(value));
+  79 │     }
+  80 │   } catch (error) {
+  81 │     console.error(`Error setting localStorage key "${key}":`, error);
+  82 │   }
+  83 │ };
+  84 │ 
+  85 │ // Sample data
+  86 │ const sampleLeads: Lead[] = [
+  87 │   {
+  88 │     id: uuidv4(),
+  89 │     name: 'Dr. Rajesh Kumar',
+  90 │     company: 'City Hospital',
+  91 │     email: 'rajesh.kumar@cityhospital.com',
+  92 │     phone: '+91 98765 43210',
+  93 │     status: 'qualified',
+  94 │     value: 50000,
+  95 │     products: ['Antibiotics', 'Pain Relief'],
+  96 │     notes: 'Interested in bulk orders for hospital pharmacy',
+  97 │     createdAt: new Date().toISOString(),
+  98 │     updatedAt: new Date().toISOString()
+  99 │   },
+ 100 │   {
+ 101 │     id: uuidv4(),
+ 102 │     name: 'Dr. Priya Sharma',
+ 103 │     company: 'Wellness Clinic',
+ 104 │     email: 'priya.s@wellnessclinic.com',
+ 105 │     phone: '+91 87654 32109',
+ 106 │     status: 'contacted',
+ 107 │     value: 25000,
+ 108 │     products: ['Vitamins', 'Supplements'],
+ 109 │     notes: 'Follow up next week about vitamin packages',
+ 110 │     createdAt: new Date().toISOString(),
+ 111 │     updatedAt: new Date().toISOString()
+ 112 │   }
+ 113 │ ];
+ 114 │ 
+ 115 │ const sampleManufacturers: Manufacturer[] = [
+ 116 │   {
+ 117 │     id: uuidv4(),
+ 118 │     name: 'MediChem Industries',
+ 119 │     contactPerson: 'Vikram Mehta',
+ 120 │     email: 'vikram@medichem.com',
+ 121 │     phone: '+91 99887 76655',
+ 122 │     address: '123 Industrial Area, Mumbai, Maharashtra',
+ 123 │     products: ['Antibiotics', 'Analgesics', 'Anti-inflammatory'],
+ 124 │     status: 'active',
+ 125 │     notes: 'Primary supplier for antibiotics',
+ 126 │     createdAt: new Date().toISOString()
+ 127 │   },
+ 128 │   {
+ 129 │     id: uuidv4(),
+ 130 │     name: 'NatureCare Pharma',
+ 131 │     contactPerson: 'Anita Desai',
+ 132 │     email: 'anita@naturecare.com',
+ 133 │     phone: '+91 88776 65544',
+ 134 │     address: '456 Pharma Park, Ahmedabad, Gujarat',
+ 135 │     products: ['Ayurvedic Medicines', 'Herbal Supplements'],
+ 136 │     status: 'active',
+ 137 │     notes: 'Specializes in natural remedies',
+ 138 │     createdAt: new Date().toISOString()
+ 139 │   }
+ 140 │ ];
+ 141 │ 
+ 142 │ const sampleProducts: Product[] = [
+ 143 │   {
+ 144 │     id: uuidv4(),
+ 145 │     name: 'Pavitol 500mg',
+ 146 │     manufacturer: 'MediChem Industries',
+ 147 │     category: 'Pain Relief',
+ 148 │     price: 120,
+ 149 │     stock: 1000,
+ 150 │     description: 'Effective pain relief for moderate to severe pain'
+ 151 │   },
+ 152 │   {
+ 153 │     id: uuidv4(),
+ 154 │     name: 'ImmuBoost Plus',
+ 155 │     manufacturer: 'NatureCare Pharma',
+ 156 │     category: 'Supplements',
+ 157 │     price: 350,
+ 158 │     stock: 500,
+ 159 │     description: 'Immunity boosting multivitamin supplement'
+ 160 │   }
+ 161 │ ];
+ 162 │ 
+ 163 │ const sampleOrders: Order[] = [
+ 164 │   {
+ 165 │     id: uuidv4(),
+ 166 │     leadId: sampleLeads[0].id,
+ 167 │     leadName: sampleLeads[0].name,
+ 168 │     products: [
+ 169 │       {
+ 170 │         id: sampleProducts[0].id,
+ 171 │         name: sampleProducts[0].name,
+ 172 │         quantity: 100,
+ 173 │         price: sampleProducts[0].price
+ 174 │       }
+ 175 │     ],
+ 176 │     totalAmount: 100 * sampleProducts[0].price,
+ 177 │     status: 'confirmed',
+ 178 │     paymentStatus: 'paid',
+ 179 │     createdAt: new Date().toISOString(),
+ 180 │     updatedAt: new Date().toISOString()
+ 181 │   }
+ 182 │ ];
+ 183 │ 
+ 184 │ // Initialize data with samples if no data exists
+ 185 │ const initializeData = () => {
+ 186 │   const leads = getStorageData<Lead>('crm_leads', []);
+ 187 │   const manufacturers = getStorageData<Manufacturer>('crm_manufacturers', []);
+ 188 │   const orders = getStorageData<Order>('crm_orders', []);
+ 189 │   const products = getStorageData<Product>('crm_products', []);
+ 190 │   
+ 191 │   if (leads.length === 0) {
+ 192 │     setStorageData('crm_leads', sampleLeads);
+ 193 │   }
+ 194 │   
+ 195 │   if (manufacturers.length === 0) {
+ 196 │     setStorageData('crm_manufacturers', sampleManufacturers);
+ 197 │   }
+ 198 │   
+ 199 │   if (orders.length === 0) {
+ 200 │     setStorageData('crm_orders', sampleOrders);
+ 201 │   }
+ 202 │   
+ 203 │   if (products.length === 0) {
+ 204 │     setStorageData('crm_products', sampleProducts);
+ 205 │   }
+ 206 │ };
+ 207 │ 
+ 208 │ // CRM Service
+ 209 │ export const CRMService = {
+ 210 │   initializeData,
+ 211 │   
+ 212 │   // Lead operations
+ 213 │   getLeads: (): Lead[] => {
+ 214 │     return getStorageData<Lead>('crm_leads', []);
+ 215 │   },
+ 216 │   
+ 217 │   getLead: (id: string): Lead | undefined => {
+ 218 │     const leads = getStorageData<Lead>('crm_leads', []);
+ 219 │     return leads.find(lead => lead.id === id);
+ 220 │   },
+ 221 │   
+ 222 │   addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Lead => {
+ 223 │     const leads = getStorageData<Lead>('crm_leads', []);
+ 224 │     const newLead: Lead = {
+ 225 │       ...lead,
+ 226 │       id: uuidv4(),
+ 227 │       createdAt: new Date().toISOString(),
+ 228 │       updatedAt: new Date().toISOString()
+ 229 │     };
+ 230 │     
+ 231 │     leads.push(newLead);
+ 232 │     setStorageData('crm_leads', leads);
+ 233 │     return newLead;
+ 234 │   },
+ 235 │   
+ 236 │   updateLead: (id: string, updates: Partial<Lead>): Lead | null => {
+ 237 │     const leads = getStorageData<Lead>('crm_leads', []);
+ 238 │     const index = leads.findIndex(lead => lead.id === id);
+ 239 │     
+ 240 │     if (index === -1) return null;
+ 241 │     
+ 242 │     const updatedLead = {
+ 243 │       ...leads[index],
+ 244 │       ...updates,
+ 245 │       updatedAt: new Date().toISOString()
+ 246 │     };
+ 247 │     
+ 248 │     leads[index] = updatedLead;
+ 249 │     setStorageData('crm_leads', leads);
+ 250 │     return updatedLead;
+ 251 │   },
+ 252 │   
+ 253 │   deleteLead: (id: string): boolean => {
+ 254 │     const leads = getStorageData<Lead>('crm_leads', []);
+ 255 │     const filtered = leads.filter(lead => lead.id !== id);
+ 256 │     
+ 257 │     if (filtered.length === leads.length) return false;
+ 258 │     
+ 259 │     setStorageData('crm_leads', filtered);
+ 260 │     return true;
+ 261 │   },
+ 262 │   
+ 263 │   // Manufacturer operations
+ 264 │   getManufacturers: (): Manufacturer[] => {
+ 265 │     return getStorageData<Manufacturer>('crm_manufacturers', []);
+ 266 │   },
+ 267 │   
+ 268 │   getManufacturer: (id: string): Manufacturer | undefined => {
+ 269 │     const manufacturers = getStorageData<Manufacturer>('crm_manufacturers', []);
+ 270 │     return manufacturers.find(manufacturer => manufacturer.id === id);
+ 271 │   },
+ 272 │   
+ 273 │   addManufacturer: (manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>): Manufacturer => {
+ 274 │     const manufacturers = getStorageData<Manufacturer>('crm_manufacturers', []);
+ 275 │     const newManufacturer: Manufacturer = {
+ 276 │       ...manufacturer,
+ 277 │       id: uuidv4(),
+ 278 │       createdAt: new Date().toISOString()
+ 279 │     };
+ 280 │     
+ 281 │     manufacturers.push(newManufacturer);
+ 282 │     setStorageData('crm_manufacturers', manufacturers);
+ 283 │     return newManufacturer;
+ 284 │   },
+ 285 │   
+ 286 │   updateManufacturer: (id: string, updates: Partial<Manufacturer>): Manufacturer | null => {
+ 287 │     const manufacturers = getStorageData<Manufacturer>('crm_manufacturers', []);
+ 288 │     const index = manufacturers.findIndex(manufacturer => manufacturer.id === id);
+ 289 │     
+ 290 │     if (index === -1) return null;
+ 291 │     
+ 292 │     const updatedManufacturer = {
+ 293 │       ...manufacturers[index],
+ 294 │       ...updates
+ 295 │     };
+ 296 │     
+ 297 │     manufacturers[index] = updatedManufacturer;
+ 298 │     setStorageData('crm_manufacturers', manufacturers);
+ 299 │     return updatedManufacturer;
+ 300 │   },
+ 301 │   
+ 302 │   deleteManufacturer: (id: string): boolean => {
+ 303 │     const manufacturers = getStorageData<Manufacturer>('crm_manufacturers', []);
+ 304 │     const filtered = manufacturers.filter(manufacturer => manufacturer.id !== id);
+ 305 │     
+ 306 │     if (filtered.length === manufacturers.length) return false;
+ 307 │     
+ 308 │     setStorageData('crm_manufacturers', filtered);
+ 309 │     return true;
+ 310 │   },
+ 311 │   
+ 312 │   // Product operations
+ 313 │   getProducts: (): Product[] => {
+ 314 │     return getStorageData<Product>('crm_products', []);
+ 315 │   },
+ 316 │   
+ 317 │   addProduct: (product: Omit<Product, 'id'>): Product => {
+ 318 │     const products = getStorageData<Product>('crm_products', []);
+ 319 │     const newProduct: Product = {
+ 320 │       ...product,
+ 321 │       id: uuidv4()
+ 322 │     };
+ 323 │     
+ 324 │     products.push(newProduct);
+ 325 │     setStorageData('crm_products', products);
+ 326 │     return newProduct;
+ 327 │   },
+ 328 │   
+ 329 │   updateProduct: (id: string, updates: Partial<Product>): Product | null => {
+ 330 │     const products = getStorageData<Product>('crm_products', []);
+ 331 │     const index = products.findIndex(product => product.id === id);
+ 332 │     
+ 333 │     if (index === -1) return null;
+ 334 │     
+ 335 │     const updatedProduct = {
+ 336 │       ...products[index],
+ 337 │       ...updates
+ 338 │     };
+ 339 │     
+ 340 │     products[index] = updatedProduct;
+ 341 │     setStorageData('crm_products', products);
+ 342 │     return updatedProduct;
+ 343 │   },
+ 344 │   
+ 345 │   deleteProduct: (id: string): boolean => {
+ 346 │     const products = getStorageData<Product>('crm_products', []);
+ 347 │     const filtered = products.filter(product => product.id !== id);
+ 348 │     
+ 349 │     if (filtered.length === products.length) return false;
+ 350 │     
+ 351 │     setStorageData('crm_products', filtered);
+ 352 │     return true;
+ 353 │   },
+ 354 │   
+ 355 │   // Order operations
+ 356 │   getOrders: (): Order[] => {
+ 357 │     return getStorageData<Order>('crm_orders', []);
+ 358 │   },
+ 359 │   
+ 360 │   getOrder: (id: string): Order | undefined => {
+ 361 │     const orders = getStorageData<Order>('crm_orders', []);
+ 362 │     return orders.find(order => order.id === id);
+ 363 │   },
+ 364 │   
+ 365 │   addOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Order => {
+ 366 │     const orders = getStorageData<Order>('crm_orders', []);
+ 367 │     const newOrder: Order = {
+ 368 │       ...order,
+ 369 │       id: uuidv4(),
+ 370 │       createdAt: new Date().toISOString(),
+ 371 │       updatedAt: new Date().toISOString()
+ 372 │     };
+ 373 │     
+ 374 │     orders.push(newOrder);
+ 375 │     setStorageData('crm_orders', orders);
+ 376 │     return newOrder;
+ 377 │   },
+ 378 │   
+ 379 │   updateOrder: (id: string, updates: Partial<Order>): Order | null => {
+ 380 │     const orders = getStorageData<Order>('crm_orders', []);
+ 381 │     const index = orders.findIndex(order => order.id === id);
+ 382 │     
+ 383 │     if (index === -1) return null;
+ 384 │     
+ 385 │     const updatedOrder = {
+ 386 │       ...orders[index],
+ 387 │       ...updates,
+ 388 │       updatedAt: new Date().toISOString()
+ 389 │     };
+ 390 │     
+ 391 │     orders[index] = updatedOrder;
+ 392 │     setStorageData('crm_orders', orders);
+ 393 │     return updatedOrder;
+ 394 │   },
+ 395 │   
+ 396 │   deleteOrder: (id: string): boolean => {
+ 397 │     const orders = getStorageData<Order>('crm_orders', []);
+ 398 │     const filtered = orders.filter(order => order.id !== id);
+ 399 │     
+ 400 │     if (filtered.length === orders.length) return false;
+ 401 │     
+ 402 │     setStorageData('crm_orders', orders);
+ 403 │     return true;
+ 404 │   }
+ 405 │ };
+ 406 │ import { v4 as uuidv4 } from 'uuid';
+     ·                ───┬──
+     ·                   ╰── `uuidv4` redefined here
+ 407 │ 
+ 408 │ export interface Lead {
+ 409 │   id: string;
+     ╰────
+  × the name `CRMService` is defined multiple times
+     ╭─[/home/runner/workspace/src/services/crmService.ts:209:1]
+ 206 │ };
+ 207 │ 
+ 208 │ // CRM Service
+ 209 │ export const CRMService = {
+     ·              ─────┬────
+     ·                   ╰── previous definition of `CRMService` here
+ 210 │   initializeData,
+ 211 │   
+ 212 │   // Lead operations
+ 213 │   getLeads: (): Lead[] => {
+ 214 │     return getStorageData<Lead>('crm_leads', []);
+ 215 │   },
+ 216 │   
+ 217 │   getLead: (id: string): Lead | undefined => {
+ 218 │     const leads = getStorageData<Lead>('crm_leads', []);
+ 219 │     return leads.find(lead => lead.id === id);
+ 220 │   },
+ 221 │   
+ 222 │   addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Lead => {
+ 223 │     const leads = getStorageData<Lead>('crm_leads', []);
+ 224 │     const newLead: Lead = {
+ 225 │       ...lead,
+ 226 │       id: uuidv4(),
+ 227 │       createdAt: new Date().toISOString(),
+ 228 │       updatedAt: new Date().toISOString()
+ 229 │     };
+ 230 │     
+ 231 │     leads.push(newLead);
+ 232 │     setStorageData('crm_leads', leads);
+ 233 │     return newLead;
+ 234 │   },
+ 235 │   
+ 236 │   updateLead: (id: string, updates: Partial<Lead>): Lead | null => {
+ 237 │     const leads = getStorageData<Lead>('crm_leads', []);
+ 238 │     const index = leads.findIndex(lead => lead.id === id);
+ 239 │     
+ 240 │     if (index === -1) return null;
+ 241 │     
+ 242 │     const updatedLead = {
+ 243 │       ...leads[index],
+ 244 │       ...updates,
+ 245 │       updatedAt: new Date().toISOString()
+ 246 │     };
+ 247 │     
+ 248 │     leads[index] = updatedLead;
+ 249 │     setStorageData('crm_leads', leads);
+ 250 │     return updatedLead;
+ 251 │   },
+ 252 │   
+ 253 │   deleteLead: (id: string): boolean => {
+ 254 │     const leads = getStorageData<Lead>('crm_leads', []);
+ 255 │     const filtered = leads.filter(lead => lead.id !== id);
+ 256 │     
+ 257 │     if (filtered.length === leads.length) return false;
+ 258 │     
+ 259 │     setStorageData('crm_leads', filtered);
+ 260 │     return true;
+ 261 │   },
+ 262 │   
+ 263 │   // Manufacturer operations
+ 264 │   getManufacturers: (): Manufacturer[] => {
+ 265 │     return getStorageData<Manufacturer>('crm_manufacturers', []);
+ 266 │   },
+ 267 │   
+ 268 │   getManufacturer: (id: string): Manufacturer | undefined => {
+ 269 │     const manufacturers = getStorageData<Manufacturer>('crm_manufacturers', []);
+ 270 │     return manufacturers.find(manufacturer => manufacturer.id === id);
+ 271 │   },
+ 272 │   
+ 273 │   addManufacturer: (manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>): Manufacturer => {
+ 274 │     const manufacturers = getStorageData<Manufacturer>('crm_manufacturers', []);
+ 275 │     const newManufacturer: Manufacturer = {
+ 276 │       ...manufacturer,
+ 277 │       id: uuidv4(),
+ 278 │       createdAt: new Date().toISOString()
+ 279 │     };
+ 280 │     
+ 281 │     manufacturers.push(newManufacturer);
+ 282 │     setStorageData('crm_manufacturers', manufacturers);
+ 283 │     return newManufacturer;
+ 284 │   },
+ 285 │   
+ 286 │   updateManufacturer: (id: string, updates: Partial<Manufacturer>): Manufacturer | null => {
+ 287 │     const manufacturers = getStorageData<Manufacturer>('crm_manufacturers', []);
+ 288 │     const index = manufacturers.findIndex(manufacturer => manufacturer.id === id);
+ 289 │     
+ 290 │     if (index === -1) return null;
+ 291 │     
+ 292 │     const updatedManufacturer = {
+ 293 │       ...manufacturers[index],
+ 294 │       ...updates
+ 295 │     };
+ 296 │     
+ 297 │     manufacturers[index] = updatedManufacturer;
+ 298 │     setStorageData('crm_manufacturers', manufacturers);
+ 299 │     return updatedManufacturer;
+ 300 │   },
+ 301 │   
+ 302 │   deleteManufacturer: (id: string): boolean => {
+ 303 │     const manufacturers = getStorageData<Manufacturer>('crm_manufacturers', []);
+ 304 │     const filtered = manufacturers.filter(manufacturer => manufacturer.id !== id);
+ 305 │     
+ 306 │     if (filtered.length === manufacturers.length) return false;
+ 307 │     
+ 308 │     setStorageData('crm_manufacturers', filtered);
+ 309 │     return true;
+ 310 │   },
+ 311 │   
+ 312 │   // Product operations
+ 313 │   getProducts: (): Product[] => {
+ 314 │     return getStorageData<Product>('crm_products', []);
+ 315 │   },
+ 316 │   
+ 317 │   addProduct: (product: Omit<Product, 'id'>): Product => {
+ 318 │     const products = getStorageData<Product>('crm_products', []);
+ 319 │     const newProduct: Product = {
+ 320 │       ...product,
+ 321 │       id: uuidv4()
+ 322 │     };
+ 323 │     
+ 324 │     products.push(newProduct);
+ 325 │     setStorageData('crm_products', products);
+ 326 │     return newProduct;
+ 327 │   },
+ 328 │   
+ 329 │   updateProduct: (id: string, updates: Partial<Product>): Product | null => {
+ 330 │     const products = getStorageData<Product>('crm_products', []);
+ 331 │     const index = products.findIndex(product => product.id === id);
+ 332 │     
+ 333 │     if (index === -1) return null;
+ 334 │     
+ 335 │     const updatedProduct = {
+ 336 │       ...products[index],
+ 337 │       ...updates
+ 338 │     };
+ 339 │     
+ 340 │     products[index] = updatedProduct;
+ 341 │     setStorageData('crm_products', products);
+ 342 │     return updatedProduct;
+ 343 │   },
+ 344 │   
+ 345 │   deleteProduct: (id: string): boolean => {
+ 346 │     const products = getStorageData<Product>('crm_products', []);
+ 347 │     const filtered = products.filter(product => product.id !== id);
+ 348 │     
+ 349 │     if (filtered.length === products.length) return false;
+ 350 │     
+ 351 │     setStorageData('crm_products', filtered);
+ 352 │     return true;
+ 353 │   },
+ 354 │   
+ 355 │   // Order operations
+ 356 │   getOrders: (): Order[] => {
+ 357 │     return getStorageData<Order>('crm_orders', []);
+ 358 │   },
+ 359 │   
+ 360 │   getOrder: (id: string): Order | undefined => {
+ 361 │     const orders = getStorageData<Order>('crm_orders', []);
+ 362 │     return orders.find(order => order.id === id);
+ 363 │   },
+ 364 │   
+ 365 │   addOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Order => {
+ 366 │     const orders = getStorageData<Order>('crm_orders', []);
+ 367 │     const newOrder: Order = {
+ 368 │       ...order,
+ 369 │       id: uuidv4(),
+ 370 │       createdAt: new Date().toISOString(),
+ 371 │       updatedAt: new Date().toISOString()
+ 372 │     };
+ 373 │     
+ 374 │     orders.push(newOrder);
+ 375 │     setStorageData('crm_orders', orders);
+ 376 │     return newOrder;
+ 377 │   },
+ 378 │   
+ 379 │   updateOrder: (id: string, updates: Partial<Order>): Order | null => {
+ 380 │     const orders = getStorageData<Order>('crm_orders', []);
+ 381 │     const index = orders.findIndex(order => order.id === id);
+ 382 │     
+ 383 │     if (index === -1) return null;
+ 384 │     
+ 385 │     const updatedOrder = {
+ 386 │       ...orders[index],
+ 387 │       ...updates,
+ 388 │       updatedAt: new Date().toISOString()
+ 389 │     };
+ 390 │     
+ 391 │     orders[index] = updatedOrder;
+ 392 │     setStorageData('crm_orders', orders);
+ 393 │     return updatedOrder;
+ 394 │   },
+ 395 │   
+ 396 │   deleteOrder: (id: string): boolean => {
+ 397 │     const orders = getStorageData<Order>('crm_orders', []);
+ 398 │     const filtered = orders.filter(order => order.id !== id);
+ 399 │     
+ 400 │     if (filtered.length === orders.length) return false;
+ 401 │     
+ 402 │     setStorageData('crm_orders', orders);
+ 403 │     return true;
+ 404 │   }
+ 405 │ };
+ 406 │ import { v4 as uuidv4 } from 'uuid';
+ 407 │ 
+ 408 │ export interface Lead {
+ 409 │   id: string;
+ 410 │   name: string;
+ 411 │   company: string;
+ 412 │   email: string;
+ 413 │   phone: string;
+ 414 │   location: string;
+ 415 │   status: string;
+ 416 │   source: string;
+ 417 │   score: number;
+ 418 │   lastContact: string;
+ 419 │   nextFollowUp?: string;
+ 420 │   notes?: string;
+ 421 │   assignedTo?: string;
+ 422 │   priority: string;
+ 423 │   createdAt: string;
+ 424 │   updatedAt: string;
+ 425 │ }
+ 426 │ 
+ 427 │ export interface Manufacturer {
+ 428 │   id: string;
+ 429 │   name: string;
+ 430 │   location: string;
+ 431 │   products: string[];
+ 432 │   minOrderValue: number;
+ 433 │   certifications: string[];
+ 434 │   contactPerson: string;
+ 435 │   email: string;
+ 436 │   phone: string;
+ 437 │   rating: number;
+ 438 │   status: string;
+ 439 │   createdAt: string;
+ 440 │   updatedAt: string;
+ 441 │ }
+ 442 │ 
+ 443 │ export interface Product {
+ 444 │   id: string;
+ 445 │   name: string;
+ 446 │   description: string;
+ 447 │   price: number;
+ 448 │   manufacturerId: string;
+ 449 │   category: string;
+ 450 │   inStock: boolean;
+ 451 │   minOrderQuantity: number;
+ 452 │   leadTime: number;
+ 453 │   imageUrl?: string;
+ 454 │ }
+ 455 │ 
+ 456 │ export interface Order {
+ 457 │   id: string;
+ 458 │   clientId: string;
+ 459 │   clientName: string;
+ 460 │   clientCompany: string;
+ 461 │   products: {
+ 462 │     id: string;
+ 463 │     name: string;
+ 464 │     quantity: number;
+ 465 │     price: number;
+ 466 │   }[];
+ 467 │   totalValue: number;
+ 468 │   status: string;
+ 469 │   manufacturerId: string;
+ 470 │   paymentStatus: string;
+ 471 │   orderDate: string;
+ 472 │   deliveryDate?: string;
+ 473 │   trackingInfo?: string;
+ 474 │   createdAt: string;
+ 475 │   updatedAt: string;
+ 476 │ }
+ 477 │ 
+ 478 │ export interface Document {
+ 479 │   id: string;
+ 480 │   name: string;
+ 481 │   type: string;
+ 482 │   relatedTo: string;
+ 483 │   relatedId: string;
+ 484 │   fileUrl: string;
+ 485 │   size: number;
+ 486 │   status: string;
+ 487 │   createdAt: string;
+ 488 │   updatedAt: string;
+ 489 │ }
+ 490 │ 
+ 491 │ const STORAGE_KEYS = {
+ 492 │   LEADS: 'crm_leads',
+ 493 │   MANUFACTURERS: 'crm_manufacturers',
+ 494 │   PRODUCTS: 'crm_products',
+ 495 │   ORDERS: 'crm_orders',
+ 496 │   DOCUMENTS: 'crm_documents',
+ 497 │ };
+ 498 │ 
+ 499 │ export const CRMService = {
+     ·              ─────┬────
+     ·                   ╰── `CRMService` redefined here
+ 500 │   initializeData: () => {
+ 501 │     // Initialize leads if not exists
+ 502 │     if (!localStorage.getItem(STORAGE_KEYS.LEADS)) {
