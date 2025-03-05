@@ -91,6 +91,15 @@ const mockSession: Session = {
   access_token: 'mock-token-for-demo'
 };
 
+// Define admin user
+const ADMIN_USER = {
+  id: "admin-user-id",
+  email: "admin@gmail.com",
+  name: "Admin User",
+  password: "admin123"
+};
+
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -162,15 +171,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [authState]);
 
   const signIn = async (email: string, password: string) => {
-    // Simulate authentication for demo
+    // Simulate auth for demo
     if (email && password) {
+      // Check for admin login
+      if (email === ADMIN_USER.email && password === ADMIN_USER.password) {
+        const adminUserObj = {
+          ...mockUser,
+          id: ADMIN_USER.id,
+          email: ADMIN_USER.email,
+          user_metadata: {
+            ...mockUser.user_metadata,
+            first_name: ADMIN_USER.name.split(' ')[0],
+            last_name: ADMIN_USER.name.split(' ')[1] || '',
+          }
+        };
+
+        const adminSession = { ...mockSession, user: adminUserObj };
+
+        setUser(adminUserObj);
+        setSession(adminSession);
+        setUserRole('admin');
+        setIsAdmin(true);
+        setIsTrialUser(false);
+        setAuthState('SIGNED_IN');
+
+        // Store auth state
+        localStorage.setItem('crm_auth', JSON.stringify({
+          user: adminUserObj,
+          session: adminSession,
+          userRole: 'admin',
+          isAdmin: true,
+          isTrialUser: false
+        }));
+
+        return { data: { user: adminUserObj, session: adminSession }, error: null };
+      }
+
+      // Regular user login
       const user = { ...mockUser, email };
       const session = { ...mockSession, user };
 
       setUser(user);
       setSession(session);
-      setUserRole('admin');
-      setIsAdmin(true);
+      setUserRole('user');
+      setIsAdmin(false);
       setIsTrialUser(false);
       setAuthState('SIGNED_IN');
 
@@ -178,8 +222,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.setItem('crm_auth', JSON.stringify({
         user,
         session,
-        userRole: 'admin',
-        isAdmin: true,
+        userRole: 'user',
+        isAdmin: false,
         isTrialUser: false
       }));
 

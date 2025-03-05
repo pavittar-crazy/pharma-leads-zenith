@@ -1,15 +1,15 @@
-
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -19,11 +19,11 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const SignIn: React.FC = () => {
-  const { signIn, loading } = useAuth();
+  const { signIn, loading, continueAsTrial } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -36,7 +36,7 @@ const SignIn: React.FC = () => {
     try {
       setIsSubmitting(true);
       const { error } = await signIn(values.email, values.password);
-      
+
       if (error) {
         toast({
           title: "Sign in failed",
@@ -55,6 +55,14 @@ const SignIn: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const skipAuth = () => {
+    navigate("/dashboard");
+  };
+
+  const handleTrialLogin = () => {
+    continueAsTrial();
   };
 
   return (
@@ -94,10 +102,42 @@ const SignIn: React.FC = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Signing in..." : "Sign In"}
-            </Button>
+            <div className="flex items-center justify-between mt-4">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Signing in..." : "Sign In"}
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/register')} type="button">
+                Create Account
+              </Button>
+            </div>
           </form>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <Separator />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <Button 
+            variant="outline" 
+            onClick={handleTrialLogin}
+            className="w-full mb-2"
+          >
+            Continue as Trial User
+          </Button>
+
+          <Button 
+            variant="ghost" 
+            onClick={skipAuth} 
+            className="w-full"
+          >
+            Skip Authentication and Go to Dashboard
+          </Button>
         </Form>
       </CardContent>
       <CardFooter className="flex justify-center">
