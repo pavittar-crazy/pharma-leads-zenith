@@ -2,21 +2,22 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-const data = [
-  { month: "Jan", revenue: 340000, leads: 175, orders: 45 },
-  { month: "Feb", revenue: 420000, leads: 190, orders: 52 },
-  { month: "Mar", revenue: 510000, leads: 210, orders: 58 },
-  { month: "Apr", revenue: 450000, leads: 205, orders: 54 },
-  { month: "May", revenue: 580000, leads: 240, orders: 62 },
-  { month: "Jun", revenue: 650000, leads: 275, orders: 70 },
-  { month: "Jul", revenue: 710000, leads: 290, orders: 76 },
-  { month: "Aug", revenue: 680000, leads: 285, orders: 72 },
-  { month: "Sep", revenue: 780000, leads: 310, orders: 80 },
-  { month: "Oct", revenue: 810000, leads: 325, orders: 85 },
-  { month: "Nov", revenue: 730000, leads: 300, orders: 78 },
-  { month: "Dec", revenue: 850000, leads: 340, orders: 88 },
+// Empty placeholder data
+const emptyData = [
+  { month: "Jan", revenue: 0, leads: 0, orders: 0 },
+  { month: "Feb", revenue: 0, leads: 0, orders: 0 },
+  { month: "Mar", revenue: 0, leads: 0, orders: 0 },
+  { month: "Apr", revenue: 0, leads: 0, orders: 0 },
+  { month: "May", revenue: 0, leads: 0, orders: 0 },
+  { month: "Jun", revenue: 0, leads: 0, orders: 0 },
+  { month: "Jul", revenue: 0, leads: 0, orders: 0 },
+  { month: "Aug", revenue: 0, leads: 0, orders: 0 },
+  { month: "Sep", revenue: 0, leads: 0, orders: 0 },
+  { month: "Oct", revenue: 0, leads: 0, orders: 0 },
+  { month: "Nov", revenue: 0, leads: 0, orders: 0 },
+  { month: "Dec", revenue: 0, leads: 0, orders: 0 },
 ];
 
 interface MetricsChartProps {
@@ -38,7 +39,7 @@ const MetricsChart: React.FC<MetricsChartProps> = ({ className }) => {
       <CardHeader>
         <CardTitle>Analytics Overview</CardTitle>
         <CardDescription>
-          Track your performance metrics over time
+          No data available yet. Start adding leads and orders to see analytics.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -50,7 +51,7 @@ const MetricsChart: React.FC<MetricsChartProps> = ({ className }) => {
           </TabsList>
           <TabsContent value="revenue" className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+              <AreaChart data={emptyData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
@@ -85,7 +86,7 @@ const MetricsChart: React.FC<MetricsChartProps> = ({ className }) => {
           </TabsContent>
           <TabsContent value="leads" className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+              <BarChart data={emptyData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
@@ -103,7 +104,7 @@ const MetricsChart: React.FC<MetricsChartProps> = ({ className }) => {
           </TabsContent>
           <TabsContent value="orders" className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+              <BarChart data={emptyData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
