@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,10 +14,15 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   if (user && !loading) {
     return <Navigate to="/" replace />;
   }
+  
+  const skipAuth = () => {
+    navigate("/dashboard");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +106,14 @@ const Login: React.FC = () => {
           </div>
 
           <TrialLoginButton onTrialLogin={handleTrialLogin} />
+          
+          <Button 
+            variant="ghost" 
+            onClick={skipAuth} 
+            className="w-full mt-2"
+          >
+            Skip Authentication and Go to Dashboard
+          </Button>
           
           <div className="mt-2 text-center text-xs text-muted-foreground">
             Trial mode provides limited access for testing purposes only
