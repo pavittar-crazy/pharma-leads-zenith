@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState } from "react";
 
 import { AuthProvider } from "./context/AuthContext";
-import { CRMProvider } from "./context/CRMContext"; // Added CRMProvider import
+import { CRMProvider } from "./context/CRMContext"; 
 import PrivateRoute from "./components/auth/PrivateRoute";
 import Navbar from "./components/layout/Navbar";
 import Sidebar from "./components/layout/Sidebar";
@@ -19,7 +19,8 @@ import Performance from "./pages/Performance";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
-import Documents from "./pages/Documents"; //Import Documents page
+import Documents from "./pages/Documents"; 
+import Login from "./pages/Login"; // Added Login page import
 
 
 const queryClient = new QueryClient();
@@ -34,9 +35,10 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <CRMProvider> {/* Added CRMProvider */}
+            <CRMProvider> 
               <Routes>
                 <Route path="/auth/*" element={<Auth />} />
+                <Route path="/login" element={<Login />} /> {/* Added Login route */}
 
                 <Route element={<PrivateRoute />}>
                   <Route
@@ -53,7 +55,7 @@ const App = () => {
                               <Route path="/lead-management" element={<LeadManagement />} />
                               <Route path="/manufacturers" element={<Manufacturers />} />
                               <Route path="/orders" element={<Orders />} />
-                              <Route path="/documents" element={<Documents />} /> {/* Added Documents Route */}
+                              <Route path="/documents" element={<Documents />} /> 
                               <Route path="/performance" element={<Performance />} />
                               <Route path="/settings" element={<Settings />} />
                               <Route path="*" element={<NotFound />} />
@@ -65,7 +67,7 @@ const App = () => {
                   />
                 </Route>
               </Routes>
-            </CRMProvider> {/* Added CRMProvider closing tag */}
+            </CRMProvider> 
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
