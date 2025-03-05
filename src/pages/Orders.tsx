@@ -1,267 +1,568 @@
 
-import React, { useState, useEffect } from "react";
-import { PlusCircle, Search, Info, Calendar, Package } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
-import { Order } from "@/types/supabase";
-import { OrderService } from "@/services/OrderService";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from 'react';
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Edit, 
+  Trash2, 
+  ExternalLink, 
+  Package,
+  FileText
+} from 'lucide-react';
+import { 
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Textarea
+} from '../components/ui';
+import { useCRM } from '../context/CRMContext';
+import { Order, Product } from '../services/crmService';
+
+const OrderStatusColors: Record<string, string> = {
+  pending: 'badge-warning',
+  confirmed: 'badge-info',
+  shipped: 'badge-primary',
+  delivered: 'badge-success',
+  cancelled: 'badge-destructive'
+};
+
+const PaymentStatusColors: Record<string, string> = {
+  unpaid: 'badge-destructive',
+  partial: 'badge-warning',
+  paid: 'badge-success'
+};
+
+interface OrderFormProps {
+  onSubmit: (data: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  initialData?: Partial<Order>;
+  onCancel: () => void;
+}
+
+const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }) => {
+  const { leads, products } = useCRM();
+  const [formData, setFormData] = useState<Partial<Order>>(initialData || {
+    leadId: '',
+    leadName: '',
+    products: [],
+    totalAmount: 0,
+    status: 'pending',
+    paymentStatus: 'unpaid'
+  });
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+
+  // Update lead name when lead ID changes
+  React.useEffect(() => {
+    if (formData.leadId) {
+      const lead = leads.find(l => l.id === formData.leadId);
+      if (lead) {
+        setFormData(prev => ({
+          ...prev,
+          leadName: lead.name
+        }));
+      }
+    }
+  }, [formData.leadId, leads]);
+
+  // Calculate total amount whenever products change
+  React.useEffect(() => {
+    if (formData.products && formData.products.length > 0) {
+      const total = formData.products.reduce(
+        (sum, product) => sum + (product.price * product.quantity), 
+        0
+      );
+      setFormData(prev => ({
+        ...prev,
+        totalAmount: total
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        totalAmount: 0
+      }));
+    }
+  }, [formData.products]);
+
+  const handleAddProduct = () => {
+    if (!selectedProductId || selectedQuantity <= 0) return;
+    
+    const productToAdd = products.find(p => p.id === selectedProductId);
+    if (!productToAdd) return;
+    
+    const updatedProducts = [
+      ...(formData.products || []),
+      {
+        id: productToAdd.id,
+        name: productToAdd.name,
+        quantity: selectedQuantity,
+        price: productToAdd.price
+      }
+    ];
+    
+    setFormData({
+      ...formData,
+      products: updatedProducts
+    });
+    
+    // Reset selection
+    setSelectedProductId('');
+    setSelectedQuantity(1);
+  };
+
+  const handleRemoveProduct = (productId: string) => {
+    if (!formData.products) return;
+    
+    setFormData({
+      ...formData,
+      products: formData.products.filter(p => p.id !== productId)
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.leadId || !formData.products || formData.products.length === 0) {
+      alert('Please select a lead and add at least one product');
+      return;
+    }
+    
+    onSubmit(formData as Omit<Order, 'id' | 'createdAt' | 'updatedAt'>);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="leadId">Customer</Label>
+          <Select 
+            value={formData.leadId} 
+            onValueChange={(value) => setFormData({...formData, leadId: value})}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select customer" />
+            </SelectTrigger>
+            <SelectContent>
+              {leads.map(lead => (
+                <SelectItem key={lead.id} value={lead.id}>
+                  {lead.name} - {lead.company}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>Products</Label>
+            <p className="text-sm text-muted-foreground">Total: {formatCurrency(formData.totalAmount || 0)}</p>
+          </div>
+          
+          {formData.products && formData.products.length > 0 && (
+            <div className="rounded-md border overflow-hidden mb-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {formData.products.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell>{product.quantity}</TableCell>
+                      <TableCell>{formatCurrency(product.price)}</TableCell>
+                      <TableCell>{formatCurrency(product.price * product.quantity)}</TableCell>
+                      <TableCell>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleRemoveProduct(product.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end mb-2">
+            <div className="sm:col-span-2">
+              <Label htmlFor="product">Product</Label>
+              <Select 
+                value={selectedProductId} 
+                onValueChange={setSelectedProductId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map(product => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name} - {formatCurrency(product.price)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input 
+                id="quantity" 
+                type="number" 
+                min={1}
+                value={selectedQuantity} 
+                onChange={(e) => setSelectedQuantity(parseInt(e.target.value) || 1)} 
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Button 
+                type="button"
+                onClick={handleAddProduct}
+                className="w-full"
+                disabled={!selectedProductId}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add Product
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="status">Order Status</Label>
+            <Select 
+              value={formData.status} 
+              onValueChange={(value) => setFormData({...formData, status: value as Order['status']})}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="shipped">Shipped</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="paymentStatus">Payment Status</Label>
+            <Select 
+              value={formData.paymentStatus} 
+              onValueChange={(value) => setFormData({...formData, paymentStatus: value as Order['paymentStatus']})}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select payment status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unpaid">Unpaid</SelectItem>
+                <SelectItem value="partial">Partially Paid</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+      
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">
+          {initialData?.id ? 'Update Order' : 'Create Order'}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+};
 
 const Orders: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const { toast } = useToast();
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await OrderService.getOrders();
-
-      if (error) {
-        throw error;
-      }
-
-      setOrders(data || []);
-    } catch (error: any) {
-      console.error('Error fetching orders:', error);
-      toast({
-        title: "Error fetching orders",
-        description: error.message || "Failed to load order data",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Filter orders based on search query
+  const { orders, addOrder, updateOrder, deleteOrder } = useCRM();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+  
   const filteredOrders = orders.filter(order => {
-    if (!searchQuery) return true;
+    const matchesSearch = 
+      order.leadName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      order.id.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const query = searchQuery.toLowerCase();
-    return (
-      order.id?.toLowerCase().includes(query) ||
-      order.status?.toLowerCase().includes(query) ||
-      order.payment_status?.toLowerCase().includes(query)
-    );
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
   });
-
-  // Count orders by status
-  const orderStats = orders.reduce((acc, order) => {
-    if (order.status) {
-      acc[order.status] = (acc[order.status] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  const getStatusBadge = (status: string | null) => {
-    if (!status) return null;
-    
-    switch (status) {
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>;
-      case "processing":
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Processing</Badge>;
-      case "shipped":
-        return <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200">Shipped</Badge>;
-      case "delivered":
-        return <Badge className="bg-green-100 text-green-800 border-green-200">Delivered</Badge>;
-      case "cancelled":
-        return <Badge className="bg-red-100 text-red-800 border-red-200">Cancelled</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">{status}</Badge>;
+  
+  const handleAddOrder = (orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
+    addOrder(orderData);
+    setIsAddDialogOpen(false);
+  };
+  
+  const handleEditOrder = (orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingOrder) {
+      updateOrder(editingOrder.id, orderData);
+      setEditingOrder(null);
+      setIsEditDialogOpen(false);
     }
   };
-
-  const getPaymentStatusBadge = (status: string | null) => {
-    if (!status) return null;
-    
-    switch (status) {
-      case "pending":
-        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400">Pending</Badge>;
-      case "partial":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400">Partial</Badge>;
-      case "complete":
-        return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400">Complete</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  
+  const handleDeleteClick = (order: Order) => {
+    setOrderToDelete(order);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (orderToDelete) {
+      deleteOrder(orderToDelete.id);
+      setOrderToDelete(null);
+      setIsDeleteDialogOpen(false);
     }
   };
-
+  
+  const openEditDialog = (order: Order) => {
+    setEditingOrder(order);
+    setIsEditDialogOpen(true);
+  };
+  
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+  
   return (
     <div className="container py-6 space-y-8 max-w-7xl page-enter">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Order Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground">
-            Track and manage all your product orders
+            Manage customer orders and track their status
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button className="flex items-center gap-2">
-            <PlusCircle className="h-4 w-4" />
-            <span>New Order</span>
-          </Button>
+        <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          <span>Create Order</span>
+        </Button>
+      </div>
+      
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="md:w-2/3 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search orders or customers..." 
+            className="pl-9" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="md:w-1/3">
+          <Select 
+            value={statusFilter} 
+            onValueChange={setStatusFilter}
+          >
+            <SelectTrigger>
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <span>Filter by Status</span>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      
+      {orders.length === 0 ? (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Orders
-            </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{orders.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              All orders in the system
+          <CardContent className="p-8 flex flex-col items-center justify-center text-center">
+            <Package className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No orders yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Start by creating your first order
+            </p>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create your first order
+            </Button>
+          </CardContent>
+        </Card>
+      ) : filteredOrders.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 flex flex-col items-center justify-center text-center">
+            <h3 className="text-lg font-medium mb-2">No results found</h3>
+            <p className="text-muted-foreground">
+              Try changing your search term or filter
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Orders
-            </CardTitle>
-            <div className="badge-warning">{orderStats.pending || 0}</div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{orderStats.pending || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Requiring attention
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              In Transit
-            </CardTitle>
-            <div className="badge-primary">{orderStats.shipped || 0}</div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{orderStats.shipped || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Currently shipping
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Completed
-            </CardTitle>
-            <div className="badge-success">{orderStats.delivered || 0}</div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{orderStats.delivered || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Successfully delivered
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="relative w-full max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search orders..."
-          className="pl-9"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Order List</CardTitle>
-          <CardDescription>
-            Manage your orders and track their status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="text-center py-12 border rounded-md">
-              <h3 className="text-lg font-medium mb-2">No orders found</h3>
-              <p className="text-muted-foreground mb-4">Get started by creating your first order</p>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create New Order
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      ) : (
+        <div className="rounded-md border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order ID</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredOrders.map((order) => (
-                <Card key={order.id} className="overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-sm font-semibold">Order #{order.id.slice(-8)}</CardTitle>
-                      {getStatusBadge(order.status)}
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">
+                    {order.id.substring(0, 8)}...
+                  </TableCell>
+                  <TableCell>{order.leadName}</TableCell>
+                  <TableCell>{formatDate(order.createdAt)}</TableCell>
+                  <TableCell>{formatCurrency(order.totalAmount)}</TableCell>
+                  <TableCell>
+                    <Badge className={OrderStatusColors[order.status] || 'badge-secondary'}>
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={PaymentStatusColors[order.paymentStatus] || 'badge-secondary'}>
+                      {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end items-center gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(order)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(order)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <FileText className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="flex items-center gap-1 text-xs">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
-                      <span>
-                        {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pb-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="text-sm">
-                        <span className="font-medium block text-xs text-muted-foreground">Payment:</span>
-                        {getPaymentStatusBadge(order.payment_status)}
-                      </div>
-                      {order.total_value !== null && (
-                        <div className="text-sm text-right">
-                          <span className="font-medium block text-xs text-muted-foreground">Total:</span>
-                          <span className="font-semibold">₹{Number(order.total_value).toLocaleString()}</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {order.products && (
-                      <div className="space-y-1">
-                        <span className="text-xs font-medium text-muted-foreground">Products:</span>
-                        <div className="text-sm">
-                          {typeof order.products === 'object' && order.products !== null
-                            ? Object.keys(order.products).length + ' items'
-                            : 'No product details'}
-                        </div>
-                      </div>
-                    )}
-
-                    {order.delivery_date && (
-                      <div className="text-sm">
-                        <span className="font-medium text-xs text-muted-foreground block">Expected Delivery:</span>
-                        {new Date(order.delivery_date).toLocaleDateString()}
-                      </div>
-                    )}
-                  </CardContent>
-                  <div className="px-6 py-2 bg-muted/30 flex justify-between items-center">
-                    <Button variant="ghost" size="sm" className="h-8 px-2">
-                      Update
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 px-2">View Details</Button>
-                  </div>
-                </Card>
+                  </TableCell>
+                </TableRow>
               ))}
-            </div>
+            </TableBody>
+          </Table>
+        </div>
+      )}
+      
+      {/* Add Order Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>Create New Order</DialogTitle>
+            <DialogDescription>
+              Create a new order by selecting a customer and adding products.
+            </DialogDescription>
+          </DialogHeader>
+          <OrderForm 
+            onSubmit={handleAddOrder} 
+            onCancel={() => setIsAddDialogOpen(false)} 
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Order Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>Edit Order</DialogTitle>
+            <DialogDescription>
+              Update the order details.
+            </DialogDescription>
+          </DialogHeader>
+          {editingOrder && (
+            <OrderForm 
+              initialData={editingOrder} 
+              onSubmit={handleEditOrder} 
+              onCancel={() => {
+                setIsEditDialogOpen(false);
+                setEditingOrder(null);
+              }}
+            />
           )}
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this order? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,237 +1,216 @@
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { v4 as uuidv4 } from 'uuid';
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-
-interface UserRole {
+// Mock user interfaces to simulate Supabase types
+interface User {
   id: string;
-  user_id: string;
-  role: 'admin' | 'sales' | 'manager' | 'employee';
-  created_at: string;
-  updated_at: string;
+  email: string;
+  user_metadata: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    company?: string;
+  };
+}
+
+interface Session {
+  user: User;
+  access_token: string;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  isAuthenticated: boolean;
   loading: boolean;
+  signIn: (email: string, password: string) => Promise<{
+    error: any | null;
+    data: any | null;
+  }>;
+  signUp: (email: string, password: string, metadata: any) => Promise<{
+    error: any | null;
+    data: any | null;
+  }>;
+  signOut: () => Promise<void>;
   userRole: string | null;
   isAdmin: boolean;
-  signUp: (email: string, password: string, metadata?: { first_name?: string; last_name?: string }) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  session: null,
+  loading: true,
+  signIn: async () => ({
+    error: null,
+    data: null,
+  }),
+  signUp: async () => ({
+    error: null,
+    data: null,
+  }),
+  signOut: async () => {},
+  userRole: null,
+  isAdmin: false,
+});
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+// Mock user for demo purposes
+const mockUser: User = {
+  id: uuidv4(),
+  email: 'demo@pavittar-pharma.com',
+  user_metadata: {
+    first_name: 'Rishul',
+    last_name: 'Chanana',
+    company: 'Pavittar Pharmaceuticals'
+  }
+};
+
+const mockSession: Session = {
+  user: mockUser,
+  access_token: 'mock-token-for-demo'
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [authChecked, setAuthChecked] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-
-  const getUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user role:', error);
-        return null;
-      }
-
-      return data?.role;
-    } catch (error) {
-      console.error('Unexpected error fetching user role:', error);
-      return null;
-    }
-  };
-
-  const checkIsAdmin = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .rpc('is_admin');
-
-      if (error) {
-        console.error('Error checking admin status:', error);
-        return false;
-      }
-
-      return data || false;
-    } catch (error) {
-      console.error('Unexpected error checking admin status:', error);
-      return false;
-    }
-  };
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check if there's an active session
+    console.log('Fetching session...');
+
+    // Simulate fetching a session
     const fetchSession = async () => {
-      try {
-        setLoading(true);
-        console.log("Fetching session...");
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error fetching session:", error);
-        } else {
-          console.log("Session fetched:", data.session ? "Found" : "None");
-          setSession(data.session);
-          
-          if (data.session?.user) {
-            setUser(data.session.user);
-            const role = await getUserRole(data.session.user.id);
-            setUserRole(role);
-            const adminStatus = await checkIsAdmin(data.session.user.id);
-            setIsAdmin(adminStatus);
-          } else {
-            setUser(null);
-            setUserRole(null);
-            setIsAdmin(false);
-          }
-        }
-      } catch (error) {
-        console.error("Unexpected error fetching session:", error);
-      } finally {
-        setLoading(false);
-        setAuthChecked(true);
+      // For demo, check if we have a stored auth state
+      const storedAuth = localStorage.getItem('crm_auth');
+
+      if (storedAuth) {
+        const parsedAuth = JSON.parse(storedAuth);
+        setUser(parsedAuth.user);
+        setSession(parsedAuth.session);
+        setUserRole(parsedAuth.userRole);
+        setIsAdmin(parsedAuth.isAdmin);
+      } else {
+        // Auto sign-in for demo purposes
+        setUser(mockUser);
+        setSession(mockSession);
+        setUserRole('admin');
+        setIsAdmin(true);
+
+        // Store auth state
+        localStorage.setItem('crm_auth', JSON.stringify({
+          user: mockUser,
+          session: mockSession,
+          userRole: 'admin',
+          isAdmin: true
+        }));
       }
+
+      // Simulate API delay
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
     };
 
     fetchSession();
 
-    // Set up a listener for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log("Auth state changed:", event);
-      setSession(newSession);
-      
-      if (newSession?.user) {
-        setUser(newSession.user);
-        const role = await getUserRole(newSession.user.id);
-        setUserRole(role);
-        const adminStatus = await checkIsAdmin(newSession.user.id);
-        setIsAdmin(adminStatus);
-      } else {
-        setUser(null);
-        setUserRole(null);
-        setIsAdmin(false);
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.log('Auth check timeout reached, forcing loading to false');
+        setLoading(false);
       }
-      
-      setLoading(false);
-      setAuthChecked(true);
-    });
+    }, 5000);
 
     return () => {
-      authListener.subscription.unsubscribe();
+      clearTimeout(timeoutId);
     };
   }, []);
 
-  // Add a safety timeout to ensure loading state doesn't get stuck
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading && !authChecked) {
-        console.log("Auth check timeout reached, forcing loading to false");
-        setLoading(false);
-      }
-    }, 3000); // Reduced to 3 seconds timeout
-    
-    return () => clearTimeout(timeout);
-  }, [loading, authChecked]);
+  const signIn = async (email: string, password: string) => {
+    // Simulate authentication for demo
+    if (email && password) {
+      const user = { ...mockUser, email };
+      const session = { ...mockSession, user };
 
-  const signUp = async (
-    email: string, 
-    password: string, 
-    metadata?: { first_name?: string; last_name?: string }
-  ) => {
-    try {
-      console.log("Signing up user with email:", email);
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: metadata
-        }
-      });
-      
-      if (!error) {
-        toast({
-          title: "Account created successfully",
-          description: "Please check your email to verify your account.",
-        });
-      } else {
-        console.error("Error in signup:", error);
-      }
-      
-      return { error };
-    } catch (error) {
-      console.error("Error signing up:", error);
-      return { error };
+      setUser(user);
+      setSession(session);
+      setUserRole('admin');
+      setIsAdmin(true);
+
+      // Store auth state
+      localStorage.setItem('crm_auth', JSON.stringify({
+        user,
+        session,
+        userRole: 'admin',
+        isAdmin: true
+      }));
+
+      return { data: { user, session }, error: null };
     }
+
+    return { 
+      data: null, 
+      error: { message: 'Invalid email or password' } 
+    };
   };
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      console.log("Signing in user with email:", email);
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) {
-        console.error("Error in signin:", error);
-      } else {
-        console.log("Sign in successful");
-      }
-      
-      return { error };
-    } catch (error) {
-      console.error("Error signing in:", error);
-      return { error };
+  const signUp = async (email: string, password: string, metadata: any) => {
+    // Simulate sign up for demo
+    if (email && password) {
+      const user = { 
+        ...mockUser, 
+        email, 
+        user_metadata: metadata 
+      };
+      const session = { ...mockSession, user };
+
+      setUser(user);
+      setSession(session);
+      setUserRole('user');
+      setIsAdmin(false);
+
+      // Store auth state
+      localStorage.setItem('crm_auth', JSON.stringify({
+        user,
+        session,
+        userRole: 'user',
+        isAdmin: false
+      }));
+
+      return { data: { user, session }, error: null };
     }
+
+    return { 
+      data: null, 
+      error: { message: 'Unable to create account' } 
+    };
   };
 
   const signOut = async () => {
-    try {
-      console.log("Signing out user");
-      setLoading(true);
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
-      setUserRole(null);
-      setIsAdmin(false);
-    } catch (error) {
-      console.error("Error signing out:", error);
-    } finally {
-      setLoading(false);
-    }
+    setUser(null);
+    setSession(null);
+    setUserRole(null);
+    setIsAdmin(false);
+    localStorage.removeItem('crm_auth');
   };
 
-  const value = {
-    user,
-    session,
-    isAuthenticated: !!user,
-    loading,
-    userRole,
-    isAdmin,
-    signUp,
-    signIn,
-    signOut
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        userRole,
+        isAdmin,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
