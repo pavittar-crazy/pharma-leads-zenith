@@ -58,7 +58,10 @@ const SignIn: React.FC = () => {
   };
 
   const skipAuth = () => {
-    navigate("/dashboard");
+    // Set a mock user to bypass authentication check
+    continueAsTrial();
+    // Navigate to the root which should be the dashboard
+    navigate("/");
   };
 
   const handleTrialLogin = () => {
