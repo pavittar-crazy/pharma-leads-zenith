@@ -1,41 +1,20 @@
 
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import {
-  PlusCircle,
-  Download,
-  Filter,
-  BarChart3,
-  FileSpreadsheet,
-  List,
-  Grid,
-  Target,
-  MessageSquare,
-  UserPlus
-} from "lucide-react";
+import { PlusCircle, Search, Filter, BarChart3, UserPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Lead } from "@/types/supabase";
-import { useAuth } from "@/context/AuthContext";
+import { LeadService } from "@/services/LeadService";
 
 const Leads: React.FC = () => {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
-  const { user } = useAuth();
 
   useEffect(() => {
     fetchLeads();
@@ -44,10 +23,7 @@ const Leads: React.FC = () => {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await LeadService.getLeads();
 
       if (error) {
         throw error;
@@ -66,19 +42,35 @@ const Leads: React.FC = () => {
     }
   };
 
+  // Filter leads based on search query
+  const filteredLeads = leads.filter(lead => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      lead.name?.toLowerCase().includes(query) ||
+      lead.company?.toLowerCase().includes(query) ||
+      lead.email?.toLowerCase().includes(query) ||
+      lead.location?.toLowerCase().includes(query)
+    );
+  });
+
   // Count leads by status
   const leadCounts = leads.reduce((acc, lead) => {
-    acc[lead.status] = (acc[lead.status] || 0) + 1;
+    if (lead.status) {
+      acc[lead.status] = (acc[lead.status] || 0) + 1;
+    }
     return acc;
   }, {} as Record<string, number>);
 
   const totalLeads = leads.length;
   const highPriorityLeads = leads.filter(lead => lead.priority === "high").length;
   const newLeadsThisWeek = leads.filter(lead => {
-    const lastContactDate = new Date(lead.last_contact);
+    if (!lead.created_at) return false;
+    const createdDate = new Date(lead.created_at);
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return lastContactDate >= oneWeekAgo;
+    return createdDate >= oneWeekAgo;
   }).length;
 
   return (
@@ -95,59 +87,12 @@ const Leads: React.FC = () => {
             <PlusCircle className="h-4 w-4" />
             <span>Add New Lead</span>
           </Button>
-          <Link to="/lead-management">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              <span>Advanced Tools</span>
-            </Button>
-          </Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Download className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                <span>Export as Excel</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                <span>Export as CSV</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                <span>Export as PDF</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <Button variant="outline" size="icon">
             <Filter className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="icon">
             <BarChart3 className="h-4 w-4" />
           </Button>
-          <div className="border rounded-md p-1 flex">
-            <Button 
-              variant={viewMode === "list" ? "secondary" : "ghost"} 
-              size="icon" 
-              className="h-8 w-8"
-              onClick={() => setViewMode("list")}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={viewMode === "grid" ? "secondary" : "ghost"} 
-              size="icon" 
-              className="h-8 w-8"
-              onClick={() => setViewMode("grid")}
-            >
-              <Grid className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -171,7 +116,7 @@ const Leads: React.FC = () => {
             <CardTitle className="text-sm font-medium">
               New Leads
             </CardTitle>
-            <Badge className="badge-info">{leadCounts.new || 0}</Badge>
+            <div className="badge-info">{leadCounts.new || 0}</div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalLeads > 0 ? ((leadCounts.new || 0) / totalLeads * 100).toFixed(1) : "0"}%</div>
@@ -185,7 +130,7 @@ const Leads: React.FC = () => {
             <CardTitle className="text-sm font-medium">
               In Negotiation
             </CardTitle>
-            <Badge className="badge-warning">{leadCounts.negotiation || 0}</Badge>
+            <div className="badge-warning">{leadCounts.negotiation || 0}</div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalLeads > 0 ? ((leadCounts.negotiation || 0) / totalLeads * 100).toFixed(1) : "0"}%</div>
@@ -199,7 +144,7 @@ const Leads: React.FC = () => {
             <CardTitle className="text-sm font-medium">
               High Priority
             </CardTitle>
-            <Badge className="badge-danger">{highPriorityLeads}</Badge>
+            <div className="badge-danger">{highPriorityLeads}</div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalLeads > 0 ? (highPriorityLeads / totalLeads * 100).toFixed(1) : "0"}%</div>
@@ -210,34 +155,32 @@ const Leads: React.FC = () => {
         </Card>
       </div>
 
+      <div className="relative w-full max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search leads..."
+          className="pl-9"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       <Tabs defaultValue="all" className="w-full">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="all">All Leads</TabsTrigger>
-            <TabsTrigger value="new">New</TabsTrigger>
-            <TabsTrigger value="contacted">Contacted</TabsTrigger>
-            <TabsTrigger value="negotiation">Negotiation</TabsTrigger>
-            <TabsTrigger value="won">Won</TabsTrigger>
-            <TabsTrigger value="lost">Lost</TabsTrigger>
-          </TabsList>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="h-9">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Bulk Message
-            </Button>
-            <Button variant="outline" size="sm" className="h-9">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Assign
-            </Button>
-          </div>
-        </div>
+        <TabsList>
+          <TabsTrigger value="all">All Leads</TabsTrigger>
+          <TabsTrigger value="new">New</TabsTrigger>
+          <TabsTrigger value="contacted">Contacted</TabsTrigger>
+          <TabsTrigger value="negotiation">Negotiation</TabsTrigger>
+          <TabsTrigger value="won">Won</TabsTrigger>
+          <TabsTrigger value="lost">Lost</TabsTrigger>
+        </TabsList>
         
         <TabsContent value="all" className="mt-4">
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
-          ) : leads.length === 0 ? (
+          ) : filteredLeads.length === 0 ? (
             <div className="text-center py-12 border rounded-md">
               <h3 className="text-lg font-medium mb-2">No leads found</h3>
               <p className="text-muted-foreground mb-4">Get started by adding your first lead</p>
@@ -248,33 +191,90 @@ const Leads: React.FC = () => {
             </div>
           ) : (
             <div className="border rounded-md p-4">
-              <p>Your leads will appear here. Feature in development.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredLeads.map((lead) => (
+                  <Card key={lead.id} className="overflow-hidden">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg font-semibold">{lead.name}</CardTitle>
+                        <div className={`px-2 py-1 rounded text-xs ${
+                          lead.priority === 'high' ? 'bg-red-100 text-red-800' : 
+                          lead.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {lead.priority?.charAt(0).toUpperCase() + lead.priority?.slice(1)}
+                        </div>
+                      </div>
+                      {lead.company && (
+                        <p className="text-sm text-muted-foreground">{lead.company}</p>
+                      )}
+                    </CardHeader>
+                    <CardContent className="pb-2">
+                      <div className="space-y-2">
+                        {lead.email && (
+                          <p className="text-sm flex items-center gap-2">
+                            <span className="font-medium">Email:</span> {lead.email}
+                          </p>
+                        )}
+                        {lead.phone && (
+                          <p className="text-sm flex items-center gap-2">
+                            <span className="font-medium">Phone:</span> {lead.phone}
+                          </p>
+                        )}
+                        {lead.location && (
+                          <p className="text-sm flex items-center gap-2">
+                            <span className="font-medium">Location:</span> {lead.location}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between text-sm mt-4">
+                          <div className={`px-2 py-1 rounded-full text-xs ${
+                            lead.status === 'new' ? 'bg-blue-100 text-blue-800' : 
+                            lead.status === 'contacted' ? 'bg-purple-100 text-purple-800' : 
+                            lead.status === 'negotiation' ? 'bg-amber-100 text-amber-800' :
+                            lead.status === 'won' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {lead.status?.charAt(0).toUpperCase() + lead.status?.slice(1)}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            Score: {lead.score || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                    <div className="px-6 py-2 bg-muted/30 flex justify-between items-center text-xs text-muted-foreground">
+                      <span>Created: {new Date(lead.created_at).toLocaleDateString()}</span>
+                      <Button variant="ghost" size="sm" className="h-8 px-2">View Details</Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
         </TabsContent>
         <TabsContent value="new" className="mt-4">
           <div className="border rounded-md p-4">
-            <p>New leads will appear here. Feature in development.</p>
+            <p>Filter your leads by status 'New'.</p>
           </div>
         </TabsContent>
         <TabsContent value="contacted" className="mt-4">
           <div className="border rounded-md p-4">
-            <p>Contacted leads will appear here. Feature in development.</p>
+            <p>Filter your leads by status 'Contacted'.</p>
           </div>
         </TabsContent>
         <TabsContent value="negotiation" className="mt-4">
           <div className="border rounded-md p-4">
-            <p>Leads in negotiation will appear here. Feature in development.</p>
+            <p>Filter your leads by status 'Negotiation'.</p>
           </div>
         </TabsContent>
         <TabsContent value="won" className="mt-4">
           <div className="border rounded-md p-4">
-            <p>Won leads will appear here. Feature in development.</p>
+            <p>Filter your leads by status 'Won'.</p>
           </div>
         </TabsContent>
         <TabsContent value="lost" className="mt-4">
           <div className="border rounded-md p-4">
-            <p>Lost leads will appear here. Feature in development.</p>
+            <p>Filter your leads by status 'Lost'.</p>
           </div>
         </TabsContent>
       </Tabs>
