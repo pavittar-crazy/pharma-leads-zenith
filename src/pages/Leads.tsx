@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   PlusCircle,
@@ -9,15 +9,14 @@ import {
   FileSpreadsheet,
   List,
   Grid,
-  UserPlus,
+  Target,
   MessageSquare,
-  Target
+  UserPlus
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,22 +25,57 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { mockLeads } from "@/lib/data";
-import LeadTable from "@/components/leads/LeadTable";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { Lead } from "@/types/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 const Leads: React.FC = () => {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setLeads(data || []);
+    } catch (error: any) {
+      console.error('Error fetching leads:', error);
+      toast({
+        title: "Error fetching leads",
+        description: error.message || "Failed to load leads data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Count leads by status
-  const leadCounts = mockLeads.reduce((acc, lead) => {
+  const leadCounts = leads.reduce((acc, lead) => {
     acc[lead.status] = (acc[lead.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const totalLeads = mockLeads.length;
-  const highPriorityLeads = mockLeads.filter(lead => lead.priority === "high").length;
-  const newLeadsThisWeek = mockLeads.filter(lead => {
-    const lastContactDate = new Date(lead.lastContact);
+  const totalLeads = leads.length;
+  const highPriorityLeads = leads.filter(lead => lead.priority === "high").length;
+  const newLeadsThisWeek = leads.filter(lead => {
+    const lastContactDate = new Date(lead.last_contact);
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     return lastContactDate >= oneWeekAgo;
@@ -117,11 +151,6 @@ const Leads: React.FC = () => {
         </div>
       </div>
 
-      <div className="rounded-md bg-muted/50 p-4 text-center">
-        <p className="font-medium">Pavittar Pharmaceuticals CRM</p>
-        <p className="text-sm text-muted-foreground">A Rishul Chanana Production</p>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -145,7 +174,7 @@ const Leads: React.FC = () => {
             <Badge className="badge-info">{leadCounts.new || 0}</Badge>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{((leadCounts.new || 0) / totalLeads * 100).toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{totalLeads > 0 ? ((leadCounts.new || 0) / totalLeads * 100).toFixed(1) : "0"}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               of total leads
             </p>
@@ -159,7 +188,7 @@ const Leads: React.FC = () => {
             <Badge className="badge-warning">{leadCounts.negotiation || 0}</Badge>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{((leadCounts.negotiation || 0) / totalLeads * 100).toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{totalLeads > 0 ? ((leadCounts.negotiation || 0) / totalLeads * 100).toFixed(1) : "0"}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               of total leads
             </p>
@@ -173,7 +202,7 @@ const Leads: React.FC = () => {
             <Badge className="badge-danger">{highPriorityLeads}</Badge>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(highPriorityLeads / totalLeads * 100).toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{totalLeads > 0 ? (highPriorityLeads / totalLeads * 100).toFixed(1) : "0"}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               of total leads
             </p>
@@ -204,22 +233,49 @@ const Leads: React.FC = () => {
         </div>
         
         <TabsContent value="all" className="mt-4">
-          <LeadTable />
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : leads.length === 0 ? (
+            <div className="text-center py-12 border rounded-md">
+              <h3 className="text-lg font-medium mb-2">No leads found</h3>
+              <p className="text-muted-foreground mb-4">Get started by adding your first lead</p>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add New Lead
+              </Button>
+            </div>
+          ) : (
+            <div className="border rounded-md p-4">
+              <p>Your leads will appear here. Feature in development.</p>
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="new" className="mt-4">
-          <LeadTable />
+          <div className="border rounded-md p-4">
+            <p>New leads will appear here. Feature in development.</p>
+          </div>
         </TabsContent>
         <TabsContent value="contacted" className="mt-4">
-          <LeadTable />
+          <div className="border rounded-md p-4">
+            <p>Contacted leads will appear here. Feature in development.</p>
+          </div>
         </TabsContent>
         <TabsContent value="negotiation" className="mt-4">
-          <LeadTable />
+          <div className="border rounded-md p-4">
+            <p>Leads in negotiation will appear here. Feature in development.</p>
+          </div>
         </TabsContent>
         <TabsContent value="won" className="mt-4">
-          <LeadTable />
+          <div className="border rounded-md p-4">
+            <p>Won leads will appear here. Feature in development.</p>
+          </div>
         </TabsContent>
         <TabsContent value="lost" className="mt-4">
-          <LeadTable />
+          <div className="border rounded-md p-4">
+            <p>Lost leads will appear here. Feature in development.</p>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
