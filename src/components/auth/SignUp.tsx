@@ -1,6 +1,6 @@
 
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters" }),
@@ -24,7 +25,10 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const SignUp: React.FC = () => {
-  const { signUp, loading } = useAuth();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -38,7 +42,36 @@ const SignUp: React.FC = () => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    await signUp(values.email, values.password, values.firstName, values.lastName);
+    try {
+      setIsSubmitting(true);
+      const { error } = await signUp(
+        values.email, 
+        values.password, 
+        { first_name: values.firstName, last_name: values.lastName }
+      );
+      
+      if (error) {
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Account created",
+          description: "Please check your email to verify your account."
+        });
+        navigate("/auth/signin");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Sign up failed",
+        description: error.message || "An error occurred during sign up",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -119,8 +152,8 @@ const SignUp: React.FC = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account..." : "Sign Up"}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Creating account..." : "Sign Up"}
             </Button>
           </form>
         </Form>
