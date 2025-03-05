@@ -1,4 +1,3 @@
-
 import React from "react";
 import { NavLink } from "react-router-dom";
 import {
@@ -98,7 +97,7 @@ const insightItems: SidebarItem[] = [
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const isMobile = useIsMobile();
-  
+
   return (
     <>
       {isMobile && isOpen && (
@@ -132,14 +131,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <span className="text-xl font-bold">Pavittar Pharma</span>
           </div>
-          
+
           {isMobile && (
             <Button variant="ghost" size="icon" className="ml-auto" onClick={onClose}>
               <X className="h-5 w-5" />
             </Button>
           )}
         </div>
-        
+
         <ScrollArea className="h-[calc(100vh-64px)] scrollbar-fancy">
           <div className="space-y-4 py-4">
             <div className="px-4 py-2">
@@ -162,9 +161,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 ))}
               </div>
             </div>
-            
+
             <Separator className="mx-4" />
-            
+
             <div className="px-4 py-2">
               <h2 className="px-2 text-xs font-semibold tracking-tight text-muted-foreground">
                 SALES TOOLS
@@ -185,9 +184,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 ))}
               </div>
             </div>
-            
+
             <Separator className="mx-4" />
-            
+
             <div className="px-4 py-2">
               <h2 className="px-2 text-xs font-semibold tracking-tight text-muted-foreground">
                 INSIGHTS
@@ -208,9 +207,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 ))}
               </div>
             </div>
-            
+
             <Separator className="mx-4" />
-            
+
             <div className="p-4 mt-6">
               <div className="rounded-md bg-muted p-3">
                 <div className="flex flex-col items-center text-center">
@@ -228,146 +227,3 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 };
 
 export default Sidebar;
-import React from "react";
-import { NavLink } from "react-router-dom";
-import {
-  Home,
-  Users,
-  UserCog,
-  Factory,
-  ShoppingBag,
-  BarChart2,
-  FileText,
-  Settings,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-
-interface SidebarProps {
-  className?: string;
-}
-
-export default function Sidebar({ className }: SidebarProps) {
-  return (
-    <div className={cn("pb-12 w-60 border-r min-h-screen", className)}>
-      <div className="space-y-4 py-4">
-        <div className="px-4 py-2">
-          <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">
-            Dashboard
-          </h2>
-          <div className="space-y-1">
-            <NavLink to="/" end>
-              {({ isActive }) => (
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                >
-                  <Home className="mr-2 h-4 w-4" />
-                  Overview
-                </Button>
-              )}
-            </NavLink>
-          </div>
-        </div>
-        <div className="px-4 py-2">
-          <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">
-            Sales & Leads
-          </h2>
-          <div className="space-y-1">
-            <NavLink to="/leads">
-              {({ isActive }) => (
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Leads
-                </Button>
-              )}
-            </NavLink>
-            <NavLink to="/lead-management">
-              {({ isActive }) => (
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                >
-                  <UserCog className="mr-2 h-4 w-4" />
-                  Lead Management
-                </Button>
-              )}
-            </NavLink>
-            <NavLink to="/manufacturers">
-              {({ isActive }) => (
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                >
-                  <Factory className="mr-2 h-4 w-4" />
-                  Manufacturers
-                </Button>
-              )}
-            </NavLink>
-            <NavLink to="/orders">
-              {({ isActive }) => (
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                >
-                  <ShoppingBag className="mr-2 h-4 w-4" />
-                  Orders
-                </Button>
-              )}
-            </NavLink>
-            <NavLink to="/documents">
-              {({ isActive }) => (
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Documents
-                </Button>
-              )}
-            </NavLink>
-          </div>
-        </div>
-        <div className="px-4 py-2">
-          <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">
-            Analytics
-          </h2>
-          <div className="space-y-1">
-            <NavLink to="/performance">
-              {({ isActive }) => (
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                >
-                  <BarChart2 className="mr-2 h-4 w-4" />
-                  Performance
-                </Button>
-              )}
-            </NavLink>
-          </div>
-        </div>
-        <div className="px-4 py-2">
-          <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">
-            System
-          </h2>
-          <div className="space-y-1">
-            <NavLink to="/settings">
-              {({ isActive }) => (
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Button>
-              )}
-            </NavLink>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
