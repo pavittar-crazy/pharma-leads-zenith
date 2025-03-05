@@ -1,6 +1,14 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { v4 as uuidv4 } from 'uuid';
 
+// Define mock trial user
+const TRIAL_USER = {
+  id: "trial-user-123",
+  email: "trial@example.com",
+  name: "Trial User",
+  role: "trial"
+};
+
 // Mock user interfaces to simulate Supabase types
 interface User {
   id: string;
@@ -18,27 +26,33 @@ interface Session {
   access_token: string;
 }
 
+type AuthState = 'LOADING' | 'SIGNED_OUT' | 'SIGNED_IN' | 'TOKEN_REFRESHED';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  authState: AuthState;
   signIn: (email: string, password: string) => Promise<{
     error: any | null;
     data: any | null;
   }>;
-  signUp: (email: string, password: string, metadata: any) => Promise<{
+  signUp: (email: string, password: string, metadata?: any) => Promise<{
     error: any | null;
     data: any | null;
   }>;
   signOut: () => Promise<void>;
   userRole: string | null;
   isAdmin: boolean;
+  continueAsTrial: () => void;
+  isTrialUser: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  authState: 'LOADING',
   signIn: async () => ({
     error: null,
     data: null,
@@ -50,6 +64,8 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   userRole: null,
   isAdmin: false,
+  continueAsTrial: () => {},
+  isTrialUser: false,
 });
 
 // Mock user for demo purposes
@@ -76,6 +92,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authState, setAuthState] = useState<AuthState>('LOADING');
+  const [isTrialUser, setIsTrialUser] = useState(false);
 
   useEffect(() => {
     console.log('Fetching session...');
@@ -91,19 +109,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setSession(parsedAuth.session);
         setUserRole(parsedAuth.userRole);
         setIsAdmin(parsedAuth.isAdmin);
+        setIsTrialUser(parsedAuth.isTrialUser || false);
+        setAuthState('SIGNED_IN');
       } else {
         // Auto sign-in for demo purposes
         setUser(mockUser);
         setSession(mockSession);
         setUserRole('admin');
         setIsAdmin(true);
+        setIsTrialUser(false);
+        setAuthState('SIGNED_IN');
 
         // Store auth state
         localStorage.setItem('crm_auth', JSON.stringify({
           user: mockUser,
           session: mockSession,
           userRole: 'admin',
-          isAdmin: true
+          isAdmin: true,
+          isTrialUser: false
         }));
       }
 
@@ -127,6 +150,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
+  useEffect(() => {
+    console.log("Auth state changed:", authState);
+  }, [authState]);
+
   const signIn = async (email: string, password: string) => {
     // Simulate authentication for demo
     if (email && password) {
@@ -137,13 +164,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setSession(session);
       setUserRole('admin');
       setIsAdmin(true);
+      setIsTrialUser(false);
+      setAuthState('SIGNED_IN');
 
       // Store auth state
       localStorage.setItem('crm_auth', JSON.stringify({
         user,
         session,
         userRole: 'admin',
-        isAdmin: true
+        isAdmin: true,
+        isTrialUser: false
       }));
 
       return { data: { user, session }, error: null };
@@ -155,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   };
 
-  const signUp = async (email: string, password: string, metadata: any) => {
+  const signUp = async (email: string, password: string, metadata: any = {}) => {
     // Simulate sign up for demo
     if (email && password) {
       const user = { 
@@ -169,13 +199,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setSession(session);
       setUserRole('user');
       setIsAdmin(false);
+      setIsTrialUser(false);
+      setAuthState('SIGNED_IN');
 
       // Store auth state
       localStorage.setItem('crm_auth', JSON.stringify({
         user,
         session,
         userRole: 'user',
-        isAdmin: false
+        isAdmin: false,
+        isTrialUser: false
       }));
 
       return { data: { user, session }, error: null };
@@ -192,7 +225,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setSession(null);
     setUserRole(null);
     setIsAdmin(false);
+    setIsTrialUser(false);
+    setAuthState('SIGNED_OUT');
     localStorage.removeItem('crm_auth');
+  };
+
+  const continueAsTrial = () => {
+    console.log("Continuing as trial user");
+    const trialUserObj = {
+      ...mockUser,
+      id: TRIAL_USER.id,
+      email: TRIAL_USER.email,
+      user_metadata: {
+        ...mockUser.user_metadata,
+        first_name: TRIAL_USER.name.split(' ')[0],
+        last_name: TRIAL_USER.name.split(' ')[1] || '',
+      }
+    };
+
+    const trialSession = { ...mockSession, user: trialUserObj };
+
+    setUser(trialUserObj);
+    setSession(trialSession);
+    setUserRole('trial');
+    setIsAdmin(false);
+    setIsTrialUser(true);
+    setAuthState('SIGNED_IN');
+
+    // Store auth state for trial user
+    localStorage.setItem('crm_auth', JSON.stringify({
+      user: trialUserObj,
+      session: trialSession,
+      userRole: 'trial',
+      isAdmin: false,
+      isTrialUser: true
+    }));
   };
 
   return (
@@ -201,126 +268,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         user,
         session,
         loading,
+        authState,
         signIn,
         signUp,
         signOut,
         userRole,
         isAdmin,
+        continueAsTrial,
+        isTrialUser,
       }}
     >
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const useAuth = () => useContext(AuthContext);
-import React, { createContext, useContext, useState, useEffect } from "react";
-
-// Define mock trial user
-const TRIAL_USER = {
-  id: "trial-user-123",
-  email: "trial@example.com",
-  name: "Trial User",
-  role: "trial"
-};
-
-type AuthState = 'LOADING' | 'SIGNED_OUT' | 'SIGNED_IN' | 'TOKEN_REFRESHED';
-
-interface AuthContextType {
-  user: any | null;
-  loading: boolean;
-  authState: AuthState;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
-  continueAsTrial: () => void;
-  isTrialUser: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [authState, setAuthState] = useState<AuthState>('LOADING');
-  const [isTrialUser, setIsTrialUser] = useState(false);
-
-  // Simulated auth functions
-  const signIn = async (email: string, password: string) => {
-    // Your existing sign in logic
-    console.log("Signing in with:", email, password);
-    setUser({ id: "1", email, name: "User" });
-    setAuthState('SIGNED_IN');
-  };
-
-  const signOut = async () => {
-    // Your existing sign out logic
-    console.log("Signing out");
-    setUser(null);
-    setIsTrialUser(false);
-    setAuthState('SIGNED_OUT');
-  };
-
-  const signUp = async (email: string, password: string) => {
-    // Your existing sign up logic
-    console.log("Signing up with:", email, password);
-    setUser({ id: "1", email, name: "New User" });
-    setAuthState('SIGNED_IN');
-  };
-
-  const continueAsTrial = () => {
-    console.log("Continuing as trial user");
-    setUser(TRIAL_USER);
-    setIsTrialUser(true);
-    setAuthState('SIGNED_IN');
-  };
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        console.log("Fetching session...");
-        // Your existing session check logic
-        
-        // For now we'll just simulate a signed out state
-        setTimeout(() => {
-          setAuthState('SIGNED_OUT');
-          setLoading(false);
-        }, 1000);
-      } catch (error) {
-        console.error("Auth error:", error);
-        setAuthState('SIGNED_OUT');
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-
-    // Force loading to false after a timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.log("Auth check timeout reached, forcing loading to false");
-        setLoading(false);
-      }
-    }, 5000);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
-    console.log("Auth state changed:", authState);
-  }, [authState]);
-
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      authState, 
-      signIn, 
-      signOut, 
-      signUp, 
-      continueAsTrial,
-      isTrialUser
-    }}>
       {children}
     </AuthContext.Provider>
   );
