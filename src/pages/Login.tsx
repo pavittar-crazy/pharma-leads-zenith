@@ -5,8 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import TrialLoginButton from "@/components/auth/TrialLoginButton";
 
@@ -39,11 +38,13 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-muted/40">
+    <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">CRM Sign In</CardTitle>
-          <CardDescription>Enter your credentials to access your account</CardDescription>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Sign in</CardTitle>
+          <CardDescription className="text-center">
+            Enter your credentials to access your account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -52,7 +53,7 @@ const Login: React.FC = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="your.email@example.com"
+                placeholder="example@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -61,18 +62,25 @@ const Login: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Button variant="link" className="p-0 h-auto text-xs">Forgot password?</Button>
+                <Button variant="link" className="px-0 text-xs">
+                  Forgot password?
+                </Button>
               </div>
               <Input
                 id="password"
                 type="password"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Signing in..." : "Sign In"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
           </form>
 

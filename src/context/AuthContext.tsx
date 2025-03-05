@@ -1,8 +1,15 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { v4 as uuidv4 } from 'uuid';
 
-// Define mock trial user
+// Trial user constant
 const TRIAL_USER = {
+  id: "trial-user-id",
+  email: "trial@example.com",
+  name: "Trial User"
+};
+
+// Define mock trial user
+const TRIAL_USER_MOCK = {
   id: "trial-user-123",
   email: "trial@example.com",
   name: "Trial User",
