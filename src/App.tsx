@@ -2,11 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState } from "react";
 
 import { AuthProvider } from "./context/AuthContext";
-import { CRMProvider } from "./context/CRMContext"; 
+import { CRMProvider } from "./context/CRMContext"; // Added CRMProvider import
 import PrivateRoute from "./components/auth/PrivateRoute";
 import Navbar from "./components/layout/Navbar";
 import Sidebar from "./components/layout/Sidebar";
@@ -19,8 +19,7 @@ import Performance from "./pages/Performance";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
-import Documents from "./pages/Documents"; 
-import Login from "./pages/Login"; // Added Login page import
+import Documents from "./pages/Documents"; //Import Documents page
 
 
 const queryClient = new QueryClient();
@@ -35,11 +34,9 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <CRMProvider> 
+            <CRMProvider> {/* Added CRMProvider */}
               <Routes>
-                {/* Redirect auth and login routes to dashboard */}
-                <Route path="/auth/*" element={<Navigate to="/" replace />} />
-                <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="/auth/*" element={<Auth />} />
 
                 <Route element={<PrivateRoute />}>
                   <Route
@@ -56,7 +53,7 @@ const App = () => {
                               <Route path="/lead-management" element={<LeadManagement />} />
                               <Route path="/manufacturers" element={<Manufacturers />} />
                               <Route path="/orders" element={<Orders />} />
-                              <Route path="/documents" element={<Documents />} /> 
+                              <Route path="/documents" element={<Documents />} /> {/* Added Documents Route */}
                               <Route path="/performance" element={<Performance />} />
                               <Route path="/settings" element={<Settings />} />
                               <Route path="*" element={<NotFound />} />
@@ -68,7 +65,7 @@ const App = () => {
                   />
                 </Route>
               </Routes>
-            </CRMProvider> 
+            </CRMProvider> {/* Added CRMProvider closing tag */}
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
