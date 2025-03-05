@@ -12,13 +12,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
+import { Badge } from "@/components/ui/badge";
 
 interface NavbarProps {
   onToggleSidebar: () => void;
 }
 
 const Navbar = ({ onToggleSidebar }: NavbarProps) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, userRole, isAdmin } = useAuth();
   
   const getInitials = () => {
     if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
@@ -76,9 +77,18 @@ const Navbar = ({ onToggleSidebar }: NavbarProps) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>
-                {user?.user_metadata?.first_name && user?.user_metadata?.last_name
-                  ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
-                  : user?.email || "My Account"}
+                <div className="flex flex-col">
+                  <span>
+                    {user?.user_metadata?.first_name && user?.user_metadata?.last_name
+                      ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+                      : user?.email || "My Account"}
+                  </span>
+                  {userRole && (
+                    <Badge variant={isAdmin ? "default" : "outline"} className="mt-1 w-fit">
+                      {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                    </Badge>
+                  )}
+                </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>

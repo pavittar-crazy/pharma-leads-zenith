@@ -4,11 +4,21 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
+interface UserRole {
+  id: string;
+  user_id: string;
+  role: 'admin' | 'sales' | 'manager' | 'employee';
+  created_at: string;
+  updated_at: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAuthenticated: boolean;
   loading: boolean;
+  userRole: string | null;
+  isAdmin: boolean;
   signUp: (email: string, password: string, metadata?: { first_name?: string; last_name?: string }) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -21,6 +31,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  const getUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return null;
+      }
+
+      return data?.role;
+    } catch (error) {
+      console.error('Unexpected error fetching user role:', error);
+      return null;
+    }
+  };
+
+  const checkIsAdmin = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .rpc('is_admin');
+
+      if (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+      }
+
+      return data || false;
+    } catch (error) {
+      console.error('Unexpected error checking admin status:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     // Check if there's an active session
@@ -35,7 +84,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else {
           console.log("Session fetched:", data.session ? "Found" : "None");
           setSession(data.session);
-          setUser(data.session?.user || null);
+          
+          if (data.session?.user) {
+            setUser(data.session.user);
+            const role = await getUserRole(data.session.user.id);
+            setUserRole(role);
+            const adminStatus = await checkIsAdmin(data.session.user.id);
+            setIsAdmin(adminStatus);
+          } else {
+            setUser(null);
+            setUserRole(null);
+            setIsAdmin(false);
+          }
         }
       } catch (error) {
         console.error("Unexpected error fetching session:", error);
@@ -48,10 +108,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     fetchSession();
 
     // Set up a listener for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log("Auth state changed:", event);
       setSession(newSession);
-      setUser(newSession?.user || null);
+      
+      if (newSession?.user) {
+        setUser(newSession.user);
+        const role = await getUserRole(newSession.user.id);
+        setUserRole(role);
+        const adminStatus = await checkIsAdmin(newSession.user.id);
+        setIsAdmin(adminStatus);
+      } else {
+        setUser(null);
+        setUserRole(null);
+        setIsAdmin(false);
+      }
+      
       setLoading(false);
       setAuthChecked(true);
     });
@@ -68,7 +140,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log("Auth check timeout reached, forcing loading to false");
         setLoading(false);
       }
-    }, 10000); // 10 seconds timeout
+    }, 3000); // Reduced to 3 seconds timeout
     
     return () => clearTimeout(timeout);
   }, [loading, authChecked]);
@@ -132,6 +204,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
+      setUserRole(null);
+      setIsAdmin(false);
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {
@@ -144,6 +218,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     session,
     isAuthenticated: !!user,
     loading,
+    userRole,
+    isAdmin,
     signUp,
     signIn,
     signOut
