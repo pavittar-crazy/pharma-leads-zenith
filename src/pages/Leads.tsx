@@ -1,34 +1,15 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, ExternalLink } from 'lucide-react';
-import { 
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  Input,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Textarea
-} from '../components/ui';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { useCRM } from '../context/CRMContext';
 import { Lead } from '../services/crmService';
 
@@ -102,7 +83,7 @@ const LeadForm: React.FC<{
           />
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -126,7 +107,7 @@ const LeadForm: React.FC<{
           />
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
@@ -160,7 +141,7 @@ const LeadForm: React.FC<{
           />
         </div>
       </div>
-      
+
       <div className="space-y-2">
         <Label htmlFor="products">Products (comma separated)</Label>
         <Input 
@@ -170,7 +151,7 @@ const LeadForm: React.FC<{
           onChange={handleProductChange} 
         />
       </div>
-      
+
       <div className="space-y-2">
         <Label htmlFor="notes">Notes</Label>
         <Textarea 
@@ -181,7 +162,7 @@ const LeadForm: React.FC<{
           rows={3} 
         />
       </div>
-      
+
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
@@ -203,23 +184,23 @@ const Leads: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
-  
+
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = 
       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
-  
+
   const handleAddLead = (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
     addLead(leadData);
     setIsAddDialogOpen(false);
   };
-  
+
   const handleEditLead = (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingLead) {
       updateLead(editingLead.id, leadData);
@@ -227,12 +208,12 @@ const Leads: React.FC = () => {
       setIsEditDialogOpen(false);
     }
   };
-  
+
   const handleDeleteClick = (lead: Lead) => {
     setLeadToDelete(lead);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const confirmDelete = () => {
     if (leadToDelete) {
       deleteLead(leadToDelete.id);
@@ -240,12 +221,12 @@ const Leads: React.FC = () => {
       setIsDeleteDialogOpen(false);
     }
   };
-  
+
   const openEditDialog = (lead: Lead) => {
     setEditingLead(lead);
     setIsEditDialogOpen(true);
   };
-  
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -253,7 +234,7 @@ const Leads: React.FC = () => {
       maximumFractionDigits: 0
     }).format(amount);
   };
-  
+
   return (
     <div className="container py-6 space-y-8 max-w-7xl page-enter">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -268,7 +249,7 @@ const Leads: React.FC = () => {
           <span>Add Lead</span>
         </Button>
       </div>
-      
+
       <div className="flex flex-col md:flex-row gap-4">
         <div className="md:w-2/3 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -302,7 +283,7 @@ const Leads: React.FC = () => {
           </Select>
         </div>
       </div>
-      
+
       {leads.length === 0 ? (
         <Card>
           <CardContent className="p-8 flex flex-col items-center justify-center text-center">
@@ -380,7 +361,7 @@ const Leads: React.FC = () => {
           </Table>
         </div>
       )}
-      
+
       {/* Add Lead Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -396,7 +377,7 @@ const Leads: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit Lead Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -418,7 +399,7 @@ const Leads: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">

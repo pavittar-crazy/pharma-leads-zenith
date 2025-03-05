@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Plus, 
@@ -11,31 +10,45 @@ import {
   Mail
 } from 'lucide-react';
 import { 
-  Badge,
-  Button,
+  Badge
+} from "@/components/ui/badge";
+import { 
+  Button
+} from "@/components/ui/button";
+import { 
   Card,
-  CardContent,
+  CardContent
+} from "@/components/ui/card";
+import { 
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-  Input,
-  Label,
+  DialogTitle
+} from "@/components/ui/dialog";
+import { 
+  Input
+} from "@/components/ui/input";
+import { 
+  Label
+} from "@/components/ui/label";
+import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
+} from "@/components/ui/select";
+import { 
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-  Textarea
-} from '../components/ui';
+  TableRow
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { useCRM } from '../context/CRMContext';
 import { Manufacturer } from '../services/crmService';
 
@@ -102,7 +115,7 @@ const ManufacturerForm: React.FC<ManufacturerFormProps> = ({ onSubmit, initialDa
           />
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -126,7 +139,7 @@ const ManufacturerForm: React.FC<ManufacturerFormProps> = ({ onSubmit, initialDa
           />
         </div>
       </div>
-      
+
       <div className="space-y-2">
         <Label htmlFor="address">Address</Label>
         <Textarea 
@@ -138,7 +151,7 @@ const ManufacturerForm: React.FC<ManufacturerFormProps> = ({ onSubmit, initialDa
           required 
         />
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="products">Products (comma separated)</Label>
@@ -166,7 +179,7 @@ const ManufacturerForm: React.FC<ManufacturerFormProps> = ({ onSubmit, initialDa
           </Select>
         </div>
       </div>
-      
+
       <div className="space-y-2">
         <Label htmlFor="notes">Notes</Label>
         <Textarea 
@@ -177,7 +190,7 @@ const ManufacturerForm: React.FC<ManufacturerFormProps> = ({ onSubmit, initialDa
           rows={3} 
         />
       </div>
-      
+
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
@@ -199,23 +212,23 @@ const Manufacturers: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingManufacturer, setEditingManufacturer] = useState<Manufacturer | null>(null);
   const [manufacturerToDelete, setManufacturerToDelete] = useState<Manufacturer | null>(null);
-  
+
   const filteredManufacturers = manufacturers.filter(manufacturer => {
     const matchesSearch = 
       manufacturer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       manufacturer.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
       manufacturer.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || manufacturer.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
-  
+
   const handleAddManufacturer = (manufacturerData: Omit<Manufacturer, 'id' | 'createdAt'>) => {
     addManufacturer(manufacturerData);
     setIsAddDialogOpen(false);
   };
-  
+
   const handleEditManufacturer = (manufacturerData: Omit<Manufacturer, 'id' | 'createdAt'>) => {
     if (editingManufacturer) {
       updateManufacturer(editingManufacturer.id, manufacturerData);
@@ -223,12 +236,12 @@ const Manufacturers: React.FC = () => {
       setIsEditDialogOpen(false);
     }
   };
-  
+
   const handleDeleteClick = (manufacturer: Manufacturer) => {
     setManufacturerToDelete(manufacturer);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const confirmDelete = () => {
     if (manufacturerToDelete) {
       deleteManufacturer(manufacturerToDelete.id);
@@ -236,12 +249,12 @@ const Manufacturers: React.FC = () => {
       setIsDeleteDialogOpen(false);
     }
   };
-  
+
   const openEditDialog = (manufacturer: Manufacturer) => {
     setEditingManufacturer(manufacturer);
     setIsEditDialogOpen(true);
   };
-  
+
   return (
     <div className="container py-6 space-y-8 max-w-7xl page-enter">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -256,7 +269,7 @@ const Manufacturers: React.FC = () => {
           <span>Add Manufacturer</span>
         </Button>
       </div>
-      
+
       <div className="flex flex-col md:flex-row gap-4">
         <div className="md:w-2/3 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -286,7 +299,7 @@ const Manufacturers: React.FC = () => {
           </Select>
         </div>
       </div>
-      
+
       {manufacturers.length === 0 ? (
         <Card>
           <CardContent className="p-8 flex flex-col items-center justify-center text-center">
@@ -324,7 +337,7 @@ const Manufacturers: React.FC = () => {
                     {manufacturer.status === 'active' ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
-                
+
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground" />
@@ -339,7 +352,7 @@ const Manufacturers: React.FC = () => {
                     <span>{manufacturer.address}</span>
                   </div>
                 </div>
-                
+
                 <div className="mb-4">
                   <Label className="text-xs text-muted-foreground">Products</Label>
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -351,7 +364,7 @@ const Manufacturers: React.FC = () => {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end gap-2">
                   <Button variant="ghost" size="sm" onClick={() => openEditDialog(manufacturer)}>
                     <Edit className="h-4 w-4 mr-2" />
@@ -367,7 +380,7 @@ const Manufacturers: React.FC = () => {
           ))}
         </div>
       )}
-      
+
       {/* Add Manufacturer Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -383,7 +396,7 @@ const Manufacturers: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit Manufacturer Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -405,7 +418,7 @@ const Manufacturers: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">

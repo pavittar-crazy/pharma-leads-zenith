@@ -1,16 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Calendar, Users, Package, IndianRupee, TrendingUp, Activity, BarChart3 } from 'lucide-react';
-import { 
-  Button, 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle,
-  Badge
-} from '../components/ui';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useCRM } from '../context/CRMContext';
 
 interface StatCardProps {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Plus, 
@@ -10,32 +9,14 @@ import {
   Package,
   FileText
 } from 'lucide-react';
-import { 
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Input,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Textarea
-} from '../components/ui';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCRM } from '../context/CRMContext';
 import { Order, Product } from '../services/crmService';
 
@@ -106,10 +87,10 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }
 
   const handleAddProduct = () => {
     if (!selectedProductId || selectedQuantity <= 0) return;
-    
+
     const productToAdd = products.find(p => p.id === selectedProductId);
     if (!productToAdd) return;
-    
+
     const updatedProducts = [
       ...(formData.products || []),
       {
@@ -119,12 +100,12 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }
         price: productToAdd.price
       }
     ];
-    
+
     setFormData({
       ...formData,
       products: updatedProducts
     });
-    
+
     // Reset selection
     setSelectedProductId('');
     setSelectedQuantity(1);
@@ -132,7 +113,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }
 
   const handleRemoveProduct = (productId: string) => {
     if (!formData.products) return;
-    
+
     setFormData({
       ...formData,
       products: formData.products.filter(p => p.id !== productId)
@@ -145,7 +126,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }
       alert('Please select a lead and add at least one product');
       return;
     }
-    
+
     onSubmit(formData as Omit<Order, 'id' | 'createdAt' | 'updatedAt'>);
   };
 
@@ -184,7 +165,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }
             <Label>Products</Label>
             <p className="text-sm text-muted-foreground">Total: {formatCurrency(formData.totalAmount || 0)}</p>
           </div>
-          
+
           {formData.products && formData.products.length > 0 && (
             <div className="rounded-md border overflow-hidden mb-4">
               <Table>
@@ -220,7 +201,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }
               </Table>
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end mb-2">
             <div className="sm:col-span-2">
               <Label htmlFor="product">Product</Label>
@@ -262,7 +243,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }
             </div>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="status">Order Status</Label>
@@ -282,7 +263,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="paymentStatus">Payment Status</Label>
             <Select 
@@ -301,7 +282,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSubmit, initialData, onCancel }
           </div>
         </div>
       </div>
-      
+
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
@@ -323,22 +304,22 @@ const Orders: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
-  
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.leadName.toLowerCase().includes(searchTerm.toLowerCase()) || 
       order.id.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
-  
+
   const handleAddOrder = (orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
     addOrder(orderData);
     setIsAddDialogOpen(false);
   };
-  
+
   const handleEditOrder = (orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingOrder) {
       updateOrder(editingOrder.id, orderData);
@@ -346,12 +327,12 @@ const Orders: React.FC = () => {
       setIsEditDialogOpen(false);
     }
   };
-  
+
   const handleDeleteClick = (order: Order) => {
     setOrderToDelete(order);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const confirmDelete = () => {
     if (orderToDelete) {
       deleteOrder(orderToDelete.id);
@@ -359,12 +340,12 @@ const Orders: React.FC = () => {
       setIsDeleteDialogOpen(false);
     }
   };
-  
+
   const openEditDialog = (order: Order) => {
     setEditingOrder(order);
     setIsEditDialogOpen(true);
   };
-  
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -372,7 +353,7 @@ const Orders: React.FC = () => {
       maximumFractionDigits: 0
     }).format(amount);
   };
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-IN', {
@@ -381,7 +362,7 @@ const Orders: React.FC = () => {
       year: 'numeric'
     });
   };
-  
+
   return (
     <div className="container py-6 space-y-8 max-w-7xl page-enter">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -396,7 +377,7 @@ const Orders: React.FC = () => {
           <span>Create Order</span>
         </Button>
       </div>
-      
+
       <div className="flex flex-col md:flex-row gap-4">
         <div className="md:w-2/3 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -429,7 +410,7 @@ const Orders: React.FC = () => {
           </Select>
         </div>
       </div>
-      
+
       {orders.length === 0 ? (
         <Card>
           <CardContent className="p-8 flex flex-col items-center justify-center text-center">
@@ -505,7 +486,7 @@ const Orders: React.FC = () => {
           </Table>
         </div>
       )}
-      
+
       {/* Add Order Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[800px]">
@@ -521,7 +502,7 @@ const Orders: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit Order Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[800px]">
@@ -543,7 +524,7 @@ const Orders: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
