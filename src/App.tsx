@@ -19,6 +19,8 @@ import Performance from "./pages/Performance";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import Documents from "./pages/Documents"; //Import Documents page
+
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,7 @@ const App = () => {
                               <Route path="/lead-management" element={<LeadManagement />} />
                               <Route path="/manufacturers" element={<Manufacturers />} />
                               <Route path="/orders" element={<Orders />} />
+                              <Route path="/documents" element={<Documents />} /> {/* Added Documents Route */}
                               <Route path="/performance" element={<Performance />} />
                               <Route path="/settings" element={<Settings />} />
                               <Route path="*" element={<NotFound />} />

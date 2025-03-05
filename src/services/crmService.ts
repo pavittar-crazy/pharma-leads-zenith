@@ -403,3 +403,355 @@ export const CRMService = {
     return true;
   }
 };
+import { v4 as uuidv4 } from 'uuid';
+
+export interface Lead {
+  id: string;
+  name: string;
+  company: string;
+  email: string;
+  phone: string;
+  location: string;
+  status: string;
+  source: string;
+  score: number;
+  lastContact: string;
+  nextFollowUp?: string;
+  notes?: string;
+  assignedTo?: string;
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Manufacturer {
+  id: string;
+  name: string;
+  location: string;
+  products: string[];
+  minOrderValue: number;
+  certifications: string[];
+  contactPerson: string;
+  email: string;
+  phone: string;
+  rating: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  manufacturerId: string;
+  category: string;
+  inStock: boolean;
+  minOrderQuantity: number;
+  leadTime: number;
+  imageUrl?: string;
+}
+
+export interface Order {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientCompany: string;
+  products: {
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+  }[];
+  totalValue: number;
+  status: string;
+  manufacturerId: string;
+  paymentStatus: string;
+  orderDate: string;
+  deliveryDate?: string;
+  trackingInfo?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  type: string;
+  relatedTo: string;
+  relatedId: string;
+  fileUrl: string;
+  size: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const STORAGE_KEYS = {
+  LEADS: 'crm_leads',
+  MANUFACTURERS: 'crm_manufacturers',
+  PRODUCTS: 'crm_products',
+  ORDERS: 'crm_orders',
+  DOCUMENTS: 'crm_documents',
+};
+
+export const CRMService = {
+  initializeData: () => {
+    // Initialize leads if not exists
+    if (!localStorage.getItem(STORAGE_KEYS.LEADS)) {
+      localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify([]));
+    }
+    
+    // Initialize manufacturers if not exists
+    if (!localStorage.getItem(STORAGE_KEYS.MANUFACTURERS)) {
+      localStorage.setItem(STORAGE_KEYS.MANUFACTURERS, JSON.stringify([]));
+    }
+    
+    // Initialize products if not exists
+    if (!localStorage.getItem(STORAGE_KEYS.PRODUCTS)) {
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify([]));
+    }
+    
+    // Initialize orders if not exists
+    if (!localStorage.getItem(STORAGE_KEYS.ORDERS)) {
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify([]));
+    }
+
+    // Initialize documents if not exists
+    if (!localStorage.getItem(STORAGE_KEYS.DOCUMENTS)) {
+      localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify([]));
+    }
+  },
+  
+  // Lead methods
+  getLeads: (): Lead[] => {
+    const leads = localStorage.getItem(STORAGE_KEYS.LEADS);
+    return leads ? JSON.parse(leads) : [];
+  },
+  
+  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const leads = CRMService.getLeads();
+    const now = new Date().toISOString();
+    
+    const newLead: Lead = {
+      ...lead,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify([...leads, newLead]));
+    return newLead;
+  },
+  
+  updateLead: (id: string, updates: Partial<Lead>) => {
+    const leads = CRMService.getLeads();
+    const leadIndex = leads.findIndex(lead => lead.id === id);
+    
+    if (leadIndex !== -1) {
+      leads[leadIndex] = {
+        ...leads[leadIndex],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify(leads));
+      return leads[leadIndex];
+    }
+    
+    return null;
+  },
+  
+  deleteLead: (id: string) => {
+    const leads = CRMService.getLeads();
+    const filteredLeads = leads.filter(lead => lead.id !== id);
+    
+    localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify(filteredLeads));
+    return true;
+  },
+  
+  // Manufacturer methods
+  getManufacturers: (): Manufacturer[] => {
+    const manufacturers = localStorage.getItem(STORAGE_KEYS.MANUFACTURERS);
+    return manufacturers ? JSON.parse(manufacturers) : [];
+  },
+  
+  addManufacturer: (manufacturer: Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const manufacturers = CRMService.getManufacturers();
+    const now = new Date().toISOString();
+    
+    const newManufacturer: Manufacturer = {
+      ...manufacturer,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    localStorage.setItem(STORAGE_KEYS.MANUFACTURERS, JSON.stringify([...manufacturers, newManufacturer]));
+    return newManufacturer;
+  },
+  
+  updateManufacturer: (id: string, updates: Partial<Manufacturer>) => {
+    const manufacturers = CRMService.getManufacturers();
+    const manufacturerIndex = manufacturers.findIndex(manufacturer => manufacturer.id === id);
+    
+    if (manufacturerIndex !== -1) {
+      manufacturers[manufacturerIndex] = {
+        ...manufacturers[manufacturerIndex],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      localStorage.setItem(STORAGE_KEYS.MANUFACTURERS, JSON.stringify(manufacturers));
+      return manufacturers[manufacturerIndex];
+    }
+    
+    return null;
+  },
+  
+  deleteManufacturer: (id: string) => {
+    const manufacturers = CRMService.getManufacturers();
+    const filteredManufacturers = manufacturers.filter(manufacturer => manufacturer.id !== id);
+    
+    localStorage.setItem(STORAGE_KEYS.MANUFACTURERS, JSON.stringify(filteredManufacturers));
+    return true;
+  },
+  
+  // Product methods
+  getProducts: (): Product[] => {
+    const products = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+    return products ? JSON.parse(products) : [];
+  },
+  
+  addProduct: (product: Omit<Product, 'id'>) => {
+    const products = CRMService.getProducts();
+    
+    const newProduct: Product = {
+      ...product,
+      id: uuidv4(),
+    };
+    
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify([...products, newProduct]));
+    return newProduct;
+  },
+  
+  updateProduct: (id: string, updates: Partial<Product>) => {
+    const products = CRMService.getProducts();
+    const productIndex = products.findIndex(product => product.id === id);
+    
+    if (productIndex !== -1) {
+      products[productIndex] = {
+        ...products[productIndex],
+        ...updates,
+      };
+      
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+      return products[productIndex];
+    }
+    
+    return null;
+  },
+  
+  deleteProduct: (id: string) => {
+    const products = CRMService.getProducts();
+    const filteredProducts = products.filter(product => product.id !== id);
+    
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(filteredProducts));
+    return true;
+  },
+  
+  // Order methods
+  getOrders: (): Order[] => {
+    const orders = localStorage.getItem(STORAGE_KEYS.ORDERS);
+    return orders ? JSON.parse(orders) : [];
+  },
+  
+  addOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const orders = CRMService.getOrders();
+    const now = new Date().toISOString();
+    
+    const newOrder: Order = {
+      ...order,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify([...orders, newOrder]));
+    return newOrder;
+  },
+  
+  updateOrder: (id: string, updates: Partial<Order>) => {
+    const orders = CRMService.getOrders();
+    const orderIndex = orders.findIndex(order => order.id === id);
+    
+    if (orderIndex !== -1) {
+      orders[orderIndex] = {
+        ...orders[orderIndex],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+      return orders[orderIndex];
+    }
+    
+    return null;
+  },
+  
+  deleteOrder: (id: string) => {
+    const orders = CRMService.getOrders();
+    const filteredOrders = orders.filter(order => order.id !== id);
+    
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(filteredOrders));
+    return true;
+  },
+
+  // Document methods
+  getDocuments: (): Document[] => {
+    const documents = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
+    return documents ? JSON.parse(documents) : [];
+  },
+  
+  addDocument: (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const documents = CRMService.getDocuments();
+    const now = new Date().toISOString();
+    
+    const newDocument: Document = {
+      ...document,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify([...documents, newDocument]));
+    return newDocument;
+  },
+  
+  updateDocument: (id: string, updates: Partial<Document>) => {
+    const documents = CRMService.getDocuments();
+    const documentIndex = documents.findIndex(document => document.id === id);
+    
+    if (documentIndex !== -1) {
+      documents[documentIndex] = {
+        ...documents[documentIndex],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(documents));
+      return documents[documentIndex];
+    }
+    
+    return null;
+  },
+  
+  deleteDocument: (id: string) => {
+    const documents = CRMService.getDocuments();
+    const filteredDocuments = documents.filter(document => document.id !== id);
+    
+    localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(filteredDocuments));
+    return true;
+  }
+};

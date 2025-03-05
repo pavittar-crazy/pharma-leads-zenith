@@ -1,11 +1,11 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   CRMService, 
   Lead, 
   Manufacturer, 
   Order, 
-  Product 
+  Product,
+  Document // Assuming a Document type exists
 } from '../services/crmService';
 
 interface CRMContextType {
@@ -13,6 +13,7 @@ interface CRMContextType {
   manufacturers: Manufacturer[];
   orders: Order[];
   products: Product[];
+  documents: Document[]; // Added documents
   addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateLead: (id: string, updates: Partial<Lead>) => void;
   deleteLead: (id: string) => void;
@@ -25,6 +26,9 @@ interface CRMContextType {
   addOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateOrder: (id: string, updates: Partial<Order>) => void;
   deleteOrder: (id: string) => void;
+  addDocument: (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => void; // Added document methods
+  updateDocument: (id: string, updates: Partial<Document>) => void; // Added document methods
+  deleteDocument: (id: string) => void; // Added document methods
   refreshData: () => void;
 }
 
@@ -35,12 +39,14 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]); // Added documents state
 
   const refreshData = () => {
     setLeads(CRMService.getLeads());
     setManufacturers(CRMService.getManufacturers());
     setOrders(CRMService.getOrders());
     setProducts(CRMService.getProducts());
+    setDocuments(CRMService.getDocuments()); // Added documents refresh
   };
 
   useEffect(() => {
@@ -108,6 +114,21 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshData();
   };
 
+  const addDocument = (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => { // Added document methods
+    CRMService.addDocument(document); // Assuming CRMService.addDocument exists
+    refreshData();
+  };
+
+  const updateDocument = (id: string, updates: Partial<Document>) => { // Added document methods
+    CRMService.updateDocument(id, updates); // Assuming CRMService.updateDocument exists
+    refreshData();
+  };
+
+  const deleteDocument = (id: string) => { // Added document methods
+    CRMService.deleteDocument(id); // Assuming CRMService.deleteDocument exists
+    refreshData();
+  };
+
   return (
     <CRMContext.Provider
       value={{
@@ -115,6 +136,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         manufacturers,
         orders,
         products,
+        documents,
         addLead,
         updateLead,
         deleteLead,
@@ -127,6 +149,9 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addOrder,
         updateOrder,
         deleteOrder,
+        addDocument,
+        updateDocument,
+        deleteDocument,
         refreshData
       }}
     >
