@@ -37,8 +37,9 @@ const App = () => {
           <AuthProvider>
             <CRMProvider> 
               <Routes>
-                <Route path="/auth/*" element={<Auth />} />
-                <Route path="/login" element={<Login />} /> {/* Added Login route */}
+                {/* Redirect auth and login routes to dashboard */}
+                <Route path="/auth/*" element={<Navigate to="/" replace />} />
+                <Route path="/login" element={<Navigate to="/" replace />} />
 
                 <Route element={<PrivateRoute />}>
                   <Route
