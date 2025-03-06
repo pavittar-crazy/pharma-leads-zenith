@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
@@ -8,6 +9,7 @@ export interface Lead {
   company: string;
   email: string;
   phone: string;
+  employeeName: string;
   status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed';
   products: string[];
   value: number;
@@ -118,6 +120,7 @@ export class CRMService {
       return data.map(lead => ({
         ...lead,
         id: lead.id,
+        employeeName: lead.employee_name || '',
         products: lead.products || [],
         value: lead.value || 0,
         createdAt: lead.created_at,
@@ -142,6 +145,8 @@ export class CRMService {
         value: lead.value || 0
       };
 
+      console.log("Sending lead to Supabase:", newLead);
+
       const { data, error } = await supabase
         .from('leads')
         .insert([{
@@ -149,6 +154,7 @@ export class CRMService {
           company: newLead.company,
           email: newLead.email,
           phone: newLead.phone,
+          employee_name: newLead.employeeName,
           status: newLead.status,
           products: newLead.products,
           value: newLead.value,
@@ -168,8 +174,11 @@ export class CRMService {
         throw error;
       }
 
+      console.log("Response from Supabase:", data);
+
       return {
         ...data[0],
+        employeeName: data[0].employee_name || '',
         products: data[0].products || [],
         value: data[0].value || 0,
         createdAt: data[0].created_at,
@@ -191,6 +200,7 @@ export class CRMService {
           company: updates.company,
           email: updates.email,
           phone: updates.phone,
+          employee_name: updates.employeeName,
           status: updates.status,
           products: updates.products,
           value: updates.value,
@@ -212,6 +222,7 @@ export class CRMService {
 
       return {
         ...data[0],
+        employeeName: data[0].employee_name || '',
         products: data[0].products || [],
         value: data[0].value || 0,
         createdAt: data[0].created_at,

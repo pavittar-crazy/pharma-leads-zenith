@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   CRMService, 
@@ -71,11 +72,17 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addLead = async (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const newLead = await CRMService.addLead(lead);
+      console.log("New lead created:", newLead);
+      
+      // Immediately update the local state before refreshing data
       setLeads(prevLeads => [...prevLeads, newLead]);
+      
       toast({
         title: "Success",
         description: "Lead added successfully",
       });
+      
+      // Refresh data to ensure everything is synced
       await refreshData();
       return newLead;
     } catch (error) {

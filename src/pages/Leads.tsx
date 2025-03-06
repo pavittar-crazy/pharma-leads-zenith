@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, ExternalLink } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
@@ -12,14 +13,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useCRM } from '../context/CRMContext';
 import { Lead } from '../services/crmService';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const LeadStatusColors: Record<string, string> = {
-  new: 'badge-primary',
-  contacted: 'badge-info',
-  qualified: 'badge-success',
-  proposal: 'badge-warning',
-  negotiation: 'badge-secondary',
-  closed: 'badge-neutral'
+  new: 'bg-primary text-primary-foreground',
+  contacted: 'bg-blue-500 text-white',
+  qualified: 'bg-green-500 text-white',
+  proposal: 'bg-amber-500 text-white',
+  negotiation: 'bg-purple-500 text-white',
+  closed: 'bg-slate-500 text-white'
 };
 
 const LeadForm: React.FC<{
@@ -32,6 +35,7 @@ const LeadForm: React.FC<{
     company: '',
     email: '',
     phone: '',
+    employeeName: '',
     status: 'new',
     value: 0,
     products: [],
@@ -56,6 +60,7 @@ const LeadForm: React.FC<{
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Submitting form data:", formData);
     onSubmit(formData as Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>);
   };
 
@@ -106,6 +111,17 @@ const LeadForm: React.FC<{
             required 
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="employeeName">Employee Name</Label>
+        <Input 
+          id="employeeName" 
+          name="employeeName" 
+          value={formData.employeeName || ''} 
+          onChange={handleChange} 
+          required 
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -176,7 +192,7 @@ const LeadForm: React.FC<{
 };
 
 const Leads: React.FC = () => {
-  const { leads, addLead, updateLead, deleteLead } = useCRM();
+  const { leads, addLead, updateLead, deleteLead, refreshData } = useCRM();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -185,27 +201,56 @@ const Leads: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
 
+  // Refresh data when the component mounts
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = 
       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.employeeName && lead.employeeName.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
-  const handleAddLead = (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
-    addLead(leadData);
-    setIsAddDialogOpen(false);
+  const handleAddLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
+    console.log("Adding lead:", leadData);
+    try {
+      await addLead(leadData);
+      setIsAddDialogOpen(false);
+      // Force refresh to ensure the new lead is displayed
+      refreshData();
+    } catch (error) {
+      console.error("Error in handleAddLead:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add lead. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleEditLead = (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleEditLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingLead) {
-      updateLead(editingLead.id, leadData);
-      setEditingLead(null);
-      setIsEditDialogOpen(false);
+      try {
+        await updateLead(editingLead.id, leadData);
+        setEditingLead(null);
+        setIsEditDialogOpen(false);
+        // Force refresh to ensure updates are displayed
+        refreshData();
+      } catch (error) {
+        console.error("Error in handleEditLead:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update lead. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -214,11 +259,22 @@ const Leads: React.FC = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (leadToDelete) {
-      deleteLead(leadToDelete.id);
-      setLeadToDelete(null);
-      setIsDeleteDialogOpen(false);
+      try {
+        await deleteLead(leadToDelete.id);
+        setLeadToDelete(null);
+        setIsDeleteDialogOpen(false);
+        // Force refresh to ensure the deleted lead is removed from display
+        refreshData();
+      } catch (error) {
+        console.error("Error in confirmDelete:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete lead. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -312,6 +368,7 @@ const Leads: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Lead</TableHead>
+                <TableHead>Employee</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Value</TableHead>
                 <TableHead>Products</TableHead>
@@ -326,7 +383,10 @@ const Leads: React.FC = () => {
                     <div className="text-sm text-muted-foreground">{lead.company}</div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={LeadStatusColors[lead.status] || 'badge-secondary'}>
+                    <div className="text-sm">{lead.employeeName || "Not assigned"}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={LeadStatusColors[lead.status] || 'bg-secondary'}>
                       {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
                     </Badge>
                   </TableCell>
