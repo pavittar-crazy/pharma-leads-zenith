@@ -10,10 +10,13 @@ import {
 import { 
   format, 
   startOfToday, 
-  subDays, 
+  subDays,
+  addDays,
   add, 
   eachDayOfInterval, 
-  endOfMonth, 
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
   parse, 
   getDay, 
   isEqual, 
@@ -22,12 +25,15 @@ import {
   parseISO 
 } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 interface Event {
   id: string;

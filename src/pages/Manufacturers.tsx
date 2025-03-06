@@ -180,7 +180,7 @@ const Manufacturers: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={manufacturer.status === 'active' ? 'success' : 'secondary'}>
+                    <Badge variant={manufacturer.status === 'active' ? 'default' : 'secondary'}>
                       {manufacturer.status.charAt(0).toUpperCase() + manufacturer.status.slice(1)}
                     </Badge>
                   </TableCell>
