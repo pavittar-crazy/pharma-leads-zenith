@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   CRMService, 
@@ -18,7 +17,7 @@ interface CRMContextType {
   addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Lead>;
   updateLead: (id: string, updates: Partial<Lead>) => Promise<Lead>;
   deleteLead: (id: string) => Promise<boolean>;
-  addManufacturer: (manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>) => Promise<Manufacturer>;
+  addManufacturer: (manufacturer: Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Manufacturer>;
   updateManufacturer: (id: string, updates: Partial<Manufacturer>) => Promise<Manufacturer>;
   deleteManufacturer: (id: string) => Promise<boolean>;
   addProduct: (product: Omit<Product, 'id'>) => Product;
@@ -81,7 +80,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return result;
   };
 
-  const addManufacturer = async (manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>) => {
+  const addManufacturer = async (manufacturer: Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newManufacturer = await CRMService.addManufacturer(manufacturer);
     await refreshData();
     return newManufacturer;

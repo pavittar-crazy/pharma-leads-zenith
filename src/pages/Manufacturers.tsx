@@ -53,7 +53,7 @@ import { useCRM } from '../context/CRMContext';
 import { Manufacturer } from '../services/crmService';
 
 interface ManufacturerFormProps {
-  onSubmit: (data: Omit<Manufacturer, 'id' | 'createdAt'>) => void;
+  onSubmit: (data: Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>) => void;
   initialData?: Partial<Manufacturer>;
   onCancel: () => void;
 }
@@ -67,7 +67,11 @@ const ManufacturerForm: React.FC<ManufacturerFormProps> = ({ onSubmit, initialDa
     address: '',
     products: [],
     status: 'active',
-    notes: ''
+    notes: '',
+    min_order_value: 0,
+    certifications: [],
+    rating: 0,
+    user_id: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -86,9 +90,17 @@ const ManufacturerForm: React.FC<ManufacturerFormProps> = ({ onSubmit, initialDa
     });
   };
 
+  const handleCertificationsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const certsString = e.target.value;
+    setFormData({
+      ...formData,
+      certifications: certsString.split(',').map(c => c.trim()).filter(c => c !== '')
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData as Omit<Manufacturer, 'id' | 'createdAt'>);
+    onSubmit(formData as Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>);
   };
 
   return (
@@ -163,21 +175,56 @@ const ManufacturerForm: React.FC<ManufacturerFormProps> = ({ onSubmit, initialDa
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select 
-            name="status" 
-            value={formData.status} 
-            onValueChange={(value) => setFormData({...formData, status: value as Manufacturer['status']})}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label htmlFor="certifications">Certifications (comma separated)</Label>
+          <Input 
+            id="certifications" 
+            name="certifications" 
+            value={formData.certifications?.join(', ') || ''} 
+            onChange={handleCertificationsChange} 
+          />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="min_order_value">Minimum Order Value</Label>
+          <Input 
+            id="min_order_value" 
+            name="min_order_value" 
+            type="number" 
+            value={formData.min_order_value || 0} 
+            onChange={(e) => setFormData({...formData, min_order_value: parseInt(e.target.value)})} 
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="rating">Rating (1-10)</Label>
+          <Input 
+            id="rating" 
+            name="rating" 
+            type="number" 
+            min="1"
+            max="10"
+            value={formData.rating || 5} 
+            onChange={(e) => setFormData({...formData, rating: parseInt(e.target.value)})} 
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="status">Status</Label>
+        <Select 
+          name="status" 
+          value={formData.status} 
+          onValueChange={(value) => setFormData({...formData, status: value})}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
@@ -224,12 +271,12 @@ const Manufacturers: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleAddManufacturer = (manufacturerData: Omit<Manufacturer, 'id' | 'createdAt'>) => {
+  const handleAddManufacturer = (manufacturerData: Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>) => {
     addManufacturer(manufacturerData);
     setIsAddDialogOpen(false);
   };
 
-  const handleEditManufacturer = (manufacturerData: Omit<Manufacturer, 'id' | 'createdAt'>) => {
+  const handleEditManufacturer = (manufacturerData: Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingManufacturer) {
       updateManufacturer(editingManufacturer.id, manufacturerData);
       setEditingManufacturer(null);

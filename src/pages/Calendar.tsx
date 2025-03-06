@@ -1,18 +1,16 @@
-
-import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Plus, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState, useEffect } from "react";
+import { format, parseISO, isToday, isSameMonth, isThisMonth, addMonths, subMonths, startOfMonth, startOfWeek, endOfWeek, addDays, isSameDay } from "date-fns";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, AlertCircle, Check, Edit, Trash2 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { format, startOfToday, endOfDay, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, parseISO } from 'date-fns';
-import { Calendar } from "@/components/ui/calendar";
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Event {
   id: string;
@@ -37,7 +35,6 @@ const CalendarPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const { toast } = useToast();
 
-  // Form state
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -50,7 +47,6 @@ const CalendarPage: React.FC = () => {
   });
 
   const fetchEvents = async () => {
-    // For now, using dummy data
     const dummyEvents = [
       {
         id: '1',
@@ -109,7 +105,6 @@ const CalendarPage: React.FC = () => {
     } else if (viewMode === 'week') {
       setCurrentDate(prevDate => subDays(prevDate, 7));
     } else {
-      // Month view
       setCurrentDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() - 1, 1));
     }
   };
@@ -120,13 +115,11 @@ const CalendarPage: React.FC = () => {
     } else if (viewMode === 'week') {
       setCurrentDate(prevDate => addDays(prevDate, 7));
     } else {
-      // Month view
       setCurrentDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1));
     }
   };
 
   const handleAddEvent = () => {
-    // Reset form
     setNewEvent({
       title: '',
       description: '',
@@ -145,7 +138,6 @@ const CalendarPage: React.FC = () => {
       const startDateTime = `${newEvent.start_date}T${newEvent.start_time}:00`;
       const endDateTime = `${newEvent.end_date}T${newEvent.end_time}:00`;
 
-      // In a real implementation, we would save to Supabase
       const newDummyEvent = {
         id: String(events.length + 1),
         title: newEvent.title,
@@ -175,7 +167,6 @@ const CalendarPage: React.FC = () => {
     }
   };
 
-  // Get days to display based on view mode
   const getDaysToDisplay = () => {
     if (viewMode === 'day') {
       return [currentDate];
@@ -184,7 +175,6 @@ const CalendarPage: React.FC = () => {
       const end = endOfWeek(currentDate);
       return eachDayOfInterval({ start, end });
     } else {
-      // Month view will be handled by the Calendar component
       return [];
     }
   };
@@ -243,7 +233,6 @@ const CalendarPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Calendar Views */}
       {viewMode === 'month' ? (
         <Card>
           <CardContent className="p-4">
@@ -334,7 +323,6 @@ const CalendarPage: React.FC = () => {
         </div>
       )}
 
-      {/* Add Event Dialog */}
       <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -436,7 +424,6 @@ const CalendarPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* View Events Dialog */}
       <Dialog open={isViewEventsOpen} onOpenChange={setIsViewEventsOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>

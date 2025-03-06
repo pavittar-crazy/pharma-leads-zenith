@@ -1,6 +1,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 export interface Lead {
   id: string;
@@ -12,6 +13,12 @@ export interface Lead {
   products: string[];
   value: number;
   notes: string;
+  location: string;
+  source: string;
+  priority: string;
+  score: number;
+  last_contact?: string;
+  next_follow_up?: string;
   createdAt: string;
   updatedAt: string;
   user_id: string;
@@ -23,12 +30,13 @@ export interface Manufacturer {
   contactPerson: string;
   email: string;
   phone: string;
-  location: string;
+  address: string;
   products: string[];
   certifications: string[];
   min_order_value: number;
   rating: number;
   status: string;
+  notes: string;
   createdAt: string;
   updatedAt: string;
   user_id: string;
@@ -115,7 +123,10 @@ export class CRMService {
         products: lead.products || [],
         value: lead.value || 0,
         createdAt: lead.created_at,
-        updatedAt: lead.updated_at
+        updatedAt: lead.updated_at,
+        status: (lead.status || 'new') as Lead['status'],
+        last_contact: lead.last_contact,
+        next_follow_up: lead.next_follow_up
       }));
     } catch (error) {
       console.error('Error in getLeads:', error);
@@ -144,6 +155,12 @@ export class CRMService {
           products: newLead.products,
           value: newLead.value,
           notes: newLead.notes,
+          location: newLead.location,
+          source: newLead.source,
+          priority: newLead.priority,
+          score: newLead.score,
+          last_contact: newLead.last_contact,
+          next_follow_up: newLead.next_follow_up,
           user_id: newLead.user_id
         }])
         .select();
@@ -156,8 +173,10 @@ export class CRMService {
       return {
         ...data[0],
         products: data[0].products || [],
+        value: data[0].value || 0,
         createdAt: data[0].created_at,
-        updatedAt: data[0].updated_at
+        updatedAt: data[0].updated_at,
+        status: (data[0].status || 'new') as Lead['status']
       };
     } catch (error) {
       console.error('Error in addLead:', error);
@@ -177,7 +196,13 @@ export class CRMService {
           status: updates.status,
           products: updates.products,
           value: updates.value,
-          notes: updates.notes
+          notes: updates.notes,
+          location: updates.location,
+          source: updates.source,
+          priority: updates.priority,
+          score: updates.score,
+          last_contact: updates.last_contact,
+          next_follow_up: updates.next_follow_up
         })
         .eq('id', id)
         .select();
@@ -190,8 +215,10 @@ export class CRMService {
       return {
         ...data[0],
         products: data[0].products || [],
+        value: data[0].value || 0,
         createdAt: data[0].created_at,
-        updatedAt: data[0].updated_at
+        updatedAt: data[0].updated_at,
+        status: (data[0].status || 'new') as Lead['status']
       };
     } catch (error) {
       console.error('Error in updateLead:', error);
@@ -238,6 +265,8 @@ export class CRMService {
         min_order_value: manufacturer.min_order_value || 0,
         products: manufacturer.products || [],
         certifications: manufacturer.certifications || [],
+        address: manufacturer.address || '',
+        notes: manufacturer.notes || '',
         createdAt: manufacturer.created_at,
         updatedAt: manufacturer.updated_at
       }));
@@ -247,7 +276,7 @@ export class CRMService {
     }
   }
 
-  static async addManufacturer(manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>): Promise<Manufacturer> {
+  static async addManufacturer(manufacturer: Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Manufacturer> {
     try {
       // Make sure user_id is included
       const newManufacturer = {
@@ -264,12 +293,13 @@ export class CRMService {
           contact_person: newManufacturer.contactPerson,
           email: newManufacturer.email,
           phone: newManufacturer.phone,
-          location: newManufacturer.location,
+          address: newManufacturer.address,
           products: newManufacturer.products,
           certifications: newManufacturer.certifications,
           min_order_value: newManufacturer.min_order_value,
           rating: newManufacturer.rating,
           status: newManufacturer.status,
+          notes: newManufacturer.notes,
           user_id: newManufacturer.user_id
         }])
         .select();
@@ -285,6 +315,8 @@ export class CRMService {
         min_order_value: data[0].min_order_value || 0,
         products: data[0].products || [],
         certifications: data[0].certifications || [],
+        address: data[0].address || '',
+        notes: data[0].notes || '',
         createdAt: data[0].created_at,
         updatedAt: data[0].updated_at
       };
@@ -303,12 +335,13 @@ export class CRMService {
           contact_person: updates.contactPerson,
           email: updates.email,
           phone: updates.phone,
-          location: updates.location,
+          address: updates.address,
           products: updates.products,
           certifications: updates.certifications,
           min_order_value: updates.min_order_value,
           rating: updates.rating,
-          status: updates.status
+          status: updates.status,
+          notes: updates.notes
         })
         .eq('id', id)
         .select();
@@ -324,6 +357,8 @@ export class CRMService {
         min_order_value: data[0].min_order_value || 0,
         products: data[0].products || [],
         certifications: data[0].certifications || [],
+        address: data[0].address || '',
+        notes: data[0].notes || '',
         createdAt: data[0].created_at,
         updatedAt: data[0].updated_at
       };
@@ -405,9 +440,10 @@ export class CRMService {
         id: order.id,
         leadId: order.lead_id,
         leadName: order.leads?.name || 'Unknown',
-        products: order.products || [],
+        products: Array.isArray(order.products) ? order.products : JSON.parse(JSON.stringify(order.products || '[]')),
         totalAmount: order.total_value || 0,
-        paymentStatus: order.payment_status,
+        paymentStatus: (order.payment_status || 'unpaid') as Order['paymentStatus'],
+        status: (order.status || 'pending') as Order['status'],
         createdAt: order.created_at,
         updatedAt: order.updated_at
       }));
@@ -429,7 +465,7 @@ export class CRMService {
         .from('orders')
         .insert([{
           lead_id: newOrder.leadId,
-          products: newOrder.products,
+          products: JSON.stringify(newOrder.products),
           total_value: newOrder.totalAmount,
           status: newOrder.status,
           payment_status: newOrder.paymentStatus,
@@ -460,9 +496,10 @@ export class CRMService {
         ...data[0],
         leadId: data[0].lead_id,
         leadName,
-        products: data[0].products || [],
+        products: Array.isArray(data[0].products) ? data[0].products : JSON.parse(JSON.stringify(data[0].products || '[]')),
         totalAmount: data[0].total_value || 0,
-        paymentStatus: data[0].payment_status,
+        paymentStatus: (data[0].payment_status || 'unpaid') as Order['paymentStatus'],
+        status: (data[0].status || 'pending') as Order['status'],
         createdAt: data[0].created_at,
         updatedAt: data[0].updated_at
       };
@@ -478,7 +515,7 @@ export class CRMService {
         .from('orders')
         .update({
           lead_id: updates.leadId,
-          products: updates.products,
+          products: updates.products ? JSON.stringify(updates.products) : undefined,
           total_value: updates.totalAmount,
           status: updates.status,
           payment_status: updates.paymentStatus
@@ -509,9 +546,10 @@ export class CRMService {
         ...data[0],
         leadId: data[0].lead_id,
         leadName,
-        products: data[0].products || [],
+        products: Array.isArray(data[0].products) ? data[0].products : JSON.parse(JSON.stringify(data[0].products || '[]')),
         totalAmount: data[0].total_value || 0,
-        paymentStatus: data[0].payment_status,
+        paymentStatus: (data[0].payment_status || 'unpaid') as Order['paymentStatus'],
+        status: (data[0].status || 'pending') as Order['status'],
         createdAt: data[0].created_at,
         updatedAt: data[0].updated_at
       };

@@ -3,17 +3,14 @@ import React, { useState } from 'react';
 import { 
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter
 } from "@/components/ui/dialog";
-import { 
-  Input
-} from "@/components/ui/input";
-import { 
-  Label
-} from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Select,
   SelectContent,
@@ -21,216 +18,243 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Textarea } from "@/components/ui/textarea";
 import { useCRM } from '@/context/CRMContext';
+import { Manufacturer } from '@/services/crmService';
 
-interface AddManufacturerDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-const AddManufacturerDialog: React.FC<AddManufacturerDialogProps> = ({ open, onOpenChange }) => {
+const AddManufacturerDialog: React.FC<{ 
+  isOpen: boolean; 
+  onClose: () => void;
+  onManufacturerAdded: (manufacturer: Manufacturer) => void;
+}> = ({ isOpen, onClose, onManufacturerAdded }) => {
   const { addManufacturer } = useCRM();
-  const [newManufacturer, setNewManufacturer] = useState({
+  const [formData, setFormData] = useState({
     name: '',
-    location: '',
-    products: [] as string[],
-    minOrderValue: 0,
-    certifications: [] as string[],
     contactPerson: '',
     email: '',
     phone: '',
-    rating: 0,
+    address: '',
+    products: [] as string[],
+    certifications: [] as string[],
+    min_order_value: 0,
+    rating: 5,
     status: 'active',
+    notes: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setNewManufacturer(prev => ({ ...prev, [id]: value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleSelectChange = (field: string, value: string) => {
-    setNewManufacturer(prev => ({ ...prev, [field]: value }));
+  const handleProductsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const productsArray = e.target.value.split(',').map(p => p.trim()).filter(p => p);
+    setFormData(prev => ({
+      ...prev,
+      products: productsArray
+    }));
   };
 
-  const handleNumberChange = (field: string, value: string) => {
-    setNewManufacturer(prev => ({ ...prev, [field]: Number(value) }));
+  const handleCertificationsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const certsArray = e.target.value.split(',').map(c => c.trim()).filter(c => c);
+    setFormData(prev => ({
+      ...prev,
+      certifications: certsArray
+    }));
   };
 
-  const handleSubmit = () => {
-    addManufacturer(newManufacturer);
-    resetForm();
-    onOpenChange(false);
-  };
-
-  const resetForm = () => {
-    setNewManufacturer({
-      name: '',
-      location: '',
-      products: [] as string[],
-      minOrderValue: 0,
-      certifications: [] as string[],
-      contactPerson: '',
-      email: '',
-      phone: '',
-      rating: 0,
-      status: 'active',
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const newManufacturer = await addManufacturer({
+        ...formData,
+        user_id: '' // This will be set in the service
+      });
+      
+      onManufacturerAdded(newManufacturer);
+      onClose();
+      setFormData({
+        name: '',
+        contactPerson: '',
+        email: '',
+        phone: '',
+        address: '',
+        products: [],
+        certifications: [],
+        min_order_value: 0,
+        rating: 5,
+        status: 'active',
+        notes: ''
+      });
+    } catch (error) {
+      console.error('Error adding manufacturer:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[525px]">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Add New Manufacturer</DialogTitle>
           <DialogDescription>
-            Enter the details for the new manufacturer. Click save when you're done.
+            Enter the details for this new pharmaceutical manufacturer.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
-            <Input
-              id="name"
-              value={newManufacturer.name}
-              onChange={handleInputChange}
-              className="col-span-3"
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Manufacturer Name</Label>
+              <Input 
+                id="name" 
+                name="name" 
+                value={formData.name} 
+                onChange={handleChange} 
+                required 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactPerson">Contact Person</Label>
+              <Input 
+                id="contactPerson" 
+                name="contactPerson" 
+                value={formData.contactPerson} 
+                onChange={handleChange} 
+                required 
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email" 
+                name="email" 
+                type="email" 
+                value={formData.email} 
+                onChange={handleChange} 
+                required 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input 
+                id="phone" 
+                name="phone" 
+                value={formData.phone} 
+                onChange={handleChange} 
+                required 
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Textarea 
+              id="address" 
+              name="address" 
+              value={formData.address} 
+              onChange={handleChange} 
+              rows={2} 
+              required 
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="location" className="text-right">
-              Location
-            </Label>
-            <Input
-              id="location"
-              value={newManufacturer.location}
-              onChange={handleInputChange}
-              className="col-span-3"
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="products">Products (comma separated)</Label>
+              <Input 
+                id="products" 
+                name="products" 
+                value={formData.products.join(', ')} 
+                onChange={handleProductsChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="certifications">Certifications (comma separated)</Label>
+              <Input 
+                id="certifications" 
+                name="certifications" 
+                value={formData.certifications.join(', ')} 
+                onChange={handleCertificationsChange}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="min_order_value">Minimum Order Value (₹)</Label>
+              <Input 
+                id="min_order_value" 
+                name="min_order_value" 
+                type="number" 
+                min="0" 
+                value={formData.min_order_value} 
+                onChange={(e) => setFormData({...formData, min_order_value: parseInt(e.target.value) || 0})} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rating">Rating (1-10)</Label>
+              <Input 
+                id="rating" 
+                name="rating" 
+                type="number" 
+                min="1" 
+                max="10" 
+                value={formData.rating} 
+                onChange={(e) => setFormData({...formData, rating: parseInt(e.target.value) || 5})} 
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select 
+                name="status" 
+                value={formData.status} 
+                onValueChange={(value) => setFormData({...formData, status: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea 
+              id="notes" 
+              name="notes" 
+              value={formData.notes} 
+              onChange={handleChange} 
+              rows={3} 
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="contactPerson" className="text-right">
-              Contact Person
-            </Label>
-            <Input
-              id="contactPerson"
-              value={newManufacturer.contactPerson}
-              onChange={handleInputChange}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={newManufacturer.email}
-              onChange={handleInputChange}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="phone" className="text-right">
-              Phone
-            </Label>
-            <Input
-              id="phone"
-              value={newManufacturer.phone}
-              onChange={handleInputChange}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="minOrderValue" className="text-right">
-              Min Order Value
-            </Label>
-            <Input
-              id="minOrderValue"
-              type="number"
-              min="0"
-              step="0.01"
-              value={newManufacturer.minOrderValue}
-              onChange={(e) => handleNumberChange('minOrderValue', e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="rating" className="text-right">
-              Rating
-            </Label>
-            <Input
-              id="rating"
-              type="number"
-              min="0"
-              max="5"
-              step="0.1"
-              value={newManufacturer.rating}
-              onChange={(e) => handleNumberChange('rating', e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="status" className="text-right">
-              Status
-            </Label>
-            <Select 
-              value={newManufacturer.status} 
-              onValueChange={(value) => handleSelectChange('status', value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="products" className="text-right">
-              Products
-            </Label>
-            <Input
-              id="products"
-              placeholder="Enter comma-separated products"
-              value={newManufacturer.products.join(', ')}
-              onChange={(e) => {
-                const productsArray = e.target.value.split(',').map(p => p.trim()).filter(Boolean);
-                setNewManufacturer(prev => ({ ...prev, products: productsArray }));
-              }}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="certifications" className="text-right">
-              Certifications
-            </Label>
-            <Input
-              id="certifications"
-              placeholder="Enter comma-separated certifications"
-              value={newManufacturer.certifications.join(', ')}
-              onChange={(e) => {
-                const certsArray = e.target.value.split(',').map(c => c.trim()).filter(Boolean);
-                setNewManufacturer(prev => ({ ...prev, certifications: certsArray }));
-              }}
-              className="col-span-3"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={handleSubmit}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Manufacturer
-          </Button>
-        </DialogFooter>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Adding...' : 'Add Manufacturer'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -1,19 +1,16 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter
 } from "@/components/ui/dialog";
-import { 
-  Input
-} from "@/components/ui/input";
-import { 
-  Label
-} from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Select,
   SelectContent,
@@ -21,302 +18,266 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Button } from '@/components/ui/button';
-import { Plus, Trash2 } from 'lucide-react';
 import { useCRM } from '@/context/CRMContext';
+import { Lead, Order, OrderProduct } from '@/services/crmService';
+import { Plus, Minus, Trash2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { format } from 'date-fns';
 
-interface AddOrderDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onOpenChange }) => {
-  const { addOrder, leads, manufacturers, products } = useCRM();
-  const [orderProducts, setOrderProducts] = useState([
-    { id: '', name: '', quantity: 1, price: 0 }
-  ]);
-  const [newOrder, setNewOrder] = useState({
-    clientId: '',
-    clientName: '',
-    clientCompany: '',
-    manufacturerId: '',
-    totalValue: 0,
+const AddOrderDialog: React.FC<{ 
+  isOpen: boolean; 
+  onClose: () => void;
+  onOrderAdded: (order: Order) => void;
+}> = ({ isOpen, onClose, onOrderAdded }) => {
+  const { addOrder, leads } = useCRM();
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [products, setProducts] = useState<OrderProduct[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
     status: 'pending',
-    paymentStatus: 'pending',
-    orderDate: new Date().toISOString().split('T')[0],
+    paymentStatus: 'unpaid',
+    orderDate: format(new Date(), 'yyyy-MM-dd')
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setNewOrder(prev => ({ ...prev, [id]: value }));
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedLead(null);
+      setProducts([]);
+      setFormData({
+        status: 'pending',
+        paymentStatus: 'unpaid',
+        orderDate: format(new Date(), 'yyyy-MM-dd')
+      });
+    }
+  }, [isOpen]);
+
+  const handleLeadChange = (leadId: string) => {
+    const lead = leads.find(l => l.id === leadId);
+    setSelectedLead(lead || null);
   };
 
-  const handleSelectChange = (field: string, value: string) => {
-    if (field === 'clientId') {
-      const selectedLead = leads.find(lead => lead.id === value);
-      if (selectedLead) {
-        setNewOrder(prev => ({
-          ...prev,
-          clientId: value,
-          clientName: selectedLead.name,
-          clientCompany: selectedLead.company
-        }));
+  const addProduct = () => {
+    setProducts([
+      ...products,
+      {
+        id: crypto.randomUUID(),
+        name: '',
+        quantity: 1,
+        price: 0
       }
-    } else {
-      setNewOrder(prev => ({ ...prev, [field]: value }));
-    }
+    ]);
   };
 
-  const handleProductChange = (index: number, field: string, value: string | number) => {
-    const updatedProducts = [...orderProducts];
-    updatedProducts[index] = { ...updatedProducts[index], [field]: value };
+  const updateProduct = (index: number, field: string, value: string | number) => {
+    const updatedProducts = [...products];
+    updatedProducts[index] = {
+      ...updatedProducts[index],
+      [field]: value
+    };
+    setProducts(updatedProducts);
+  };
+
+  const removeProduct = (index: number) => {
+    setProducts(products.filter((_, i) => i !== index));
+  };
+
+  const calculateTotal = () => {
+    return products.reduce((sum, product) => sum + (product.quantity * product.price), 0);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (field === 'id') {
-      const selectedProduct = products.find(p => p.id === value);
-      if (selectedProduct) {
-        updatedProducts[index].name = selectedProduct.name;
-        updatedProducts[index].price = selectedProduct.price;
-      }
+    if (!selectedLead || products.length === 0) {
+      return;
     }
     
-    setOrderProducts(updatedProducts);
-    calculateTotal(updatedProducts);
-  };
-
-  const addProductRow = () => {
-    setOrderProducts([...orderProducts, { id: '', name: '', quantity: 1, price: 0 }]);
-  };
-
-  const removeProductRow = (index: number) => {
-    if (orderProducts.length > 1) {
-      const updatedProducts = orderProducts.filter((_, i) => i !== index);
-      setOrderProducts(updatedProducts);
-      calculateTotal(updatedProducts);
+    setIsSubmitting(true);
+    
+    try {
+      const newOrder = await addOrder({
+        leadId: selectedLead.id,
+        leadName: selectedLead.name,
+        products: products,
+        totalAmount: calculateTotal(),
+        status: formData.status as Order['status'],
+        paymentStatus: formData.paymentStatus as Order['paymentStatus'],
+        user_id: '' // This will be set in the service
+      });
+      
+      onOrderAdded(newOrder);
+      onClose();
+    } catch (error) {
+      console.error('Error adding order:', error);
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const calculateTotal = (products = orderProducts) => {
-    const total = products.reduce((sum, product) => {
-      return sum + (product.quantity * product.price);
-    }, 0);
-    setNewOrder(prev => ({ ...prev, totalValue: total }));
-  };
-
-  const handleSubmit = () => {
-    addOrder({
-      ...newOrder,
-      products: orderProducts
-    });
-    resetForm();
-    onOpenChange(false);
-  };
-
-  const resetForm = () => {
-    setNewOrder({
-      clientId: '',
-      clientName: '',
-      clientCompany: '',
-      manufacturerId: '',
-      totalValue: 0,
-      status: 'pending',
-      paymentStatus: 'pending',
-      orderDate: new Date().toISOString().split('T')[0],
-    });
-    setOrderProducts([{ id: '', name: '', quantity: 1, price: 0 }]);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[650px]">
         <DialogHeader>
           <DialogTitle>Create New Order</DialogTitle>
           <DialogDescription>
-            Fill in the details for the new order. Click save when you're done.
+            Add a new order for a lead. Make sure to include all required products.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="clientId" className="text-right">
-              Client
-            </Label>
-            <Select 
-              value={newOrder.clientId} 
-              onValueChange={(value) => handleSelectChange('clientId', value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select client" />
-              </SelectTrigger>
-              <SelectContent>
-                {leads.map(lead => (
-                  <SelectItem key={lead.id} value={lead.id}>
-                    {lead.name} ({lead.company})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="manufacturerId" className="text-right">
-              Manufacturer
-            </Label>
-            <Select 
-              value={newOrder.manufacturerId} 
-              onValueChange={(value) => handleSelectChange('manufacturerId', value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select manufacturer" />
-              </SelectTrigger>
-              <SelectContent>
-                {manufacturers.map(manufacturer => (
-                  <SelectItem key={manufacturer.id} value={manufacturer.id}>
-                    {manufacturer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="status" className="text-right">
-              Status
-            </Label>
-            <Select 
-              value={newOrder.status} 
-              onValueChange={(value) => handleSelectChange('status', value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="paymentStatus" className="text-right">
-              Payment
-            </Label>
-            <Select 
-              value={newOrder.paymentStatus} 
-              onValueChange={(value) => handleSelectChange('paymentStatus', value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select payment status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="partial">Partial</SelectItem>
-                <SelectItem value="complete">Complete</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="orderDate" className="text-right">
-              Order Date
-            </Label>
-            <Input
-              id="orderDate"
-              type="date"
-              value={newOrder.orderDate}
-              onChange={handleInputChange}
-              className="col-span-3"
-            />
-          </div>
-          
-          <div className="border-t pt-4 mt-2">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Products</h3>
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={addProductRow}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button>
-            </div>
-            
-            {orderProducts.map((product, index) => (
-              <div key={index} className="grid grid-cols-12 gap-2 mb-3 items-center">
-                <div className="col-span-5">
-                  <Select 
-                    value={product.id} 
-                    onValueChange={(value) => handleProductChange(index, 'id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map(p => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} (${p.price})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    value={product.quantity}
-                    onChange={(e) => handleProductChange(index, 'quantity', parseInt(e.target.value))}
-                    placeholder="Qty"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={product.price}
-                    onChange={(e) => handleProductChange(index, 'price', parseFloat(e.target.value))}
-                    placeholder="Price"
-                    disabled={!!product.id}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Input
-                    value={`$${(product.quantity * product.price).toFixed(2)}`}
-                    disabled
-                  />
-                </div>
-                <div className="col-span-1 flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeProductRow(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            
-            <div className="flex justify-end mt-4">
-              <div className="w-1/3">
-                <div className="flex justify-between">
-                  <span className="font-medium">Total:</span>
-                  <span className="font-medium">${newOrder.totalValue.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
         
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={handleSubmit}>
-            Create Order
-          </Button>
-        </DialogFooter>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="leadId">Select Client</Label>
+              <Select 
+                value={selectedLead?.id || ''} 
+                onValueChange={handleLeadChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leads.map(lead => (
+                    <SelectItem key={lead.id} value={lead.id}>
+                      {lead.name} ({lead.company})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <Label>Products</Label>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={addProduct}
+                  className="text-xs h-8"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Product
+                </Button>
+              </div>
+
+              {products.length === 0 ? (
+                <Card>
+                  <CardContent className="p-4 text-center text-muted-foreground">
+                    No products added. Click "Add Product" to start building the order.
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {products.map((product, index) => (
+                    <div key={product.id} className="flex items-center gap-2 border p-3 rounded-md">
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Product name"
+                          value={product.name}
+                          onChange={(e) => updateProduct(index, 'name', e.target.value)}
+                        />
+                      </div>
+                      <div className="w-20">
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="Qty"
+                          value={product.quantity}
+                          onChange={(e) => updateProduct(index, 'quantity', parseInt(e.target.value) || 1)}
+                        />
+                      </div>
+                      <div className="w-24">
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="Price"
+                          value={product.price}
+                          onChange={(e) => updateProduct(index, 'price', parseFloat(e.target.value) || 0)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeProduct(index)}
+                        className="h-9 w-9"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  <div className="flex justify-end p-2">
+                    <div className="text-sm font-medium">
+                      Total: ₹{calculateTotal().toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="status">Order Status</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(value) => setFormData({...formData, status: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="paymentStatus">Payment Status</Label>
+                <Select 
+                  value={formData.paymentStatus} 
+                  onValueChange={(value) => setFormData({...formData, paymentStatus: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unpaid">Unpaid</SelectItem>
+                    <SelectItem value="partial">Partial</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="orderDate">Order Date</Label>
+                <Input
+                  id="orderDate"
+                  type="date"
+                  value={formData.orderDate}
+                  onChange={(e) => setFormData({...formData, orderDate: e.target.value})}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || !selectedLead || products.length === 0}
+            >
+              {isSubmitting ? 'Creating...' : 'Create Order'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
