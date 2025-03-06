@@ -7,6 +7,7 @@ import {
   Product,
   Document
 } from '../services/crmService';
+import { toast } from "@/hooks/use-toast";
 
 interface CRMContextType {
   leads: Lead[];
@@ -54,6 +55,11 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setDocuments(CRMService.getDocuments());
     } catch (error) {
       console.error("Error refreshing data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh data. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -63,21 +69,66 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const addLead = async (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newLead = await CRMService.addLead(lead);
-    await refreshData();
-    return newLead;
+    try {
+      const newLead = await CRMService.addLead(lead);
+      setLeads(prevLeads => [...prevLeads, newLead]);
+      toast({
+        title: "Success",
+        description: "Lead added successfully",
+      });
+      await refreshData();
+      return newLead;
+    } catch (error) {
+      console.error("Error adding lead:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add lead. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const updateLead = async (id: string, updates: Partial<Lead>) => {
-    const updatedLead = await CRMService.updateLead(id, updates);
-    await refreshData();
-    return updatedLead;
+    try {
+      const updatedLead = await CRMService.updateLead(id, updates);
+      toast({
+        title: "Success",
+        description: "Lead updated successfully",
+      });
+      await refreshData();
+      return updatedLead;
+    } catch (error) {
+      console.error("Error updating lead:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update lead. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const deleteLead = async (id: string) => {
-    const result = await CRMService.deleteLead(id);
-    await refreshData();
-    return result;
+    try {
+      const result = await CRMService.deleteLead(id);
+      if (result) {
+        toast({
+          title: "Success",
+          description: "Lead deleted successfully",
+        });
+      }
+      await refreshData();
+      return result;
+    } catch (error) {
+      console.error("Error deleting lead:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete lead. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
   };
 
   const addManufacturer = async (manufacturer: Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>) => {
