@@ -110,11 +110,13 @@ export type Database = {
           notes: string | null
           phone: string | null
           priority: string | null
+          products: string[] | null
           score: number | null
           source: string | null
           status: string | null
           updated_at: string
           user_id: string
+          value: number | null
         }
         Insert: {
           company?: string | null
@@ -128,11 +130,13 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           priority?: string | null
+          products?: string[] | null
           score?: number | null
           source?: string | null
           status?: string | null
           updated_at?: string
           user_id: string
+          value?: number | null
         }
         Update: {
           company?: string | null
@@ -146,24 +150,27 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           priority?: string | null
+          products?: string[] | null
           score?: number | null
           source?: string | null
           status?: string | null
           updated_at?: string
           user_id?: string
+          value?: number | null
         }
         Relationships: []
       }
       manufacturers: {
         Row: {
+          address: string | null
           certifications: string[] | null
           contact_person: string | null
           created_at: string
           email: string | null
           id: string
-          location: string | null
           min_order_value: number | null
           name: string
+          notes: string | null
           phone: string | null
           products: string[] | null
           rating: number | null
@@ -172,14 +179,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          address?: string | null
           certifications?: string[] | null
           contact_person?: string | null
           created_at?: string
           email?: string | null
           id?: string
-          location?: string | null
           min_order_value?: number | null
           name: string
+          notes?: string | null
           phone?: string | null
           products?: string[] | null
           rating?: number | null
@@ -188,14 +196,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          address?: string | null
           certifications?: string[] | null
           contact_person?: string | null
           created_at?: string
           email?: string | null
           id?: string
-          location?: string | null
           min_order_value?: number | null
           name?: string
+          notes?: string | null
           phone?: string | null
           products?: string[] | null
           rating?: number | null

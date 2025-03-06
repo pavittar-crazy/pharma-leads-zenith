@@ -1,16 +1,33 @@
-import React, { useState, useEffect } from "react";
-import { format, parseISO, isToday, isSameMonth, isThisMonth, addMonths, subMonths, startOfMonth, startOfWeek, endOfWeek, addDays, isSameDay } from "date-fns";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, AlertCircle, Check, Edit, Trash2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import React, { useState, useEffect } from 'react';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Calendar as CalendarIcon 
+} from 'lucide-react';
+import { 
+  format, 
+  startOfToday, 
+  subDays, 
+  add, 
+  eachDayOfInterval, 
+  endOfMonth, 
+  parse, 
+  getDay, 
+  isEqual, 
+  isSameDay, 
+  isToday, 
+  parseISO 
+} from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/use-toast";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 
 interface Event {
   id: string;

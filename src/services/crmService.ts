@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
@@ -104,7 +103,6 @@ export class CRMService {
     // Initialize with empty arrays, data will be fetched from Supabase
   }
 
-  // Leads
   static async getLeads(): Promise<Lead[]> {
     try {
       const { data, error } = await supabase
@@ -245,7 +243,6 @@ export class CRMService {
     }
   }
 
-  // Manufacturers
   static async getManufacturers(): Promise<Manufacturer[]> {
     try {
       const { data, error } = await supabase
@@ -387,9 +384,7 @@ export class CRMService {
     }
   }
 
-  // Products
   static getProducts(): Product[] {
-    // Mock implementation for now
     return this.mockData.products;
   }
 
@@ -422,7 +417,6 @@ export class CRMService {
     return true;
   }
 
-  // Orders
   static async getOrders(): Promise<Order[]> {
     try {
       const { data, error } = await supabase
@@ -463,14 +457,14 @@ export class CRMService {
 
       const { data, error } = await supabase
         .from('orders')
-        .insert([{
+        .insert({
           lead_id: newOrder.leadId,
           products: JSON.stringify(newOrder.products),
           total_value: newOrder.totalAmount,
           status: newOrder.status,
           payment_status: newOrder.paymentStatus,
           user_id: newOrder.user_id
-        }])
+        })
         .select();
 
       if (error) {
@@ -578,7 +572,6 @@ export class CRMService {
     }
   }
 
-  // Documents
   static getDocuments(): Document[] {
     return this.mockData.documents;
   }
