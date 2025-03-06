@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, ExternalLink } from 'lucide-react';
@@ -39,14 +38,18 @@ const LeadForm: React.FC<{
     status: 'new',
     value: 0,
     products: [],
-    notes: ''
+    notes: '',
+    location: '',
+    source: '',
+    priority: 'medium',
+    score: 0
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'value' ? Number(value) : value
+      [name]: name === 'value' || name === 'score' ? Number(value) : value
     });
   };
 
@@ -158,6 +161,59 @@ const LeadForm: React.FC<{
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="location">Location</Label>
+          <Input 
+            id="location" 
+            name="location" 
+            value={formData.location || ''} 
+            onChange={handleChange} 
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="source">Source</Label>
+          <Input 
+            id="source" 
+            name="source" 
+            value={formData.source || ''} 
+            onChange={handleChange} 
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <Select 
+            name="priority" 
+            value={formData.priority} 
+            onValueChange={(value) => setFormData({...formData, priority: value})}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="score">Score</Label>
+          <Input 
+            id="score" 
+            name="score" 
+            type="number" 
+            value={formData.score || 0} 
+            onChange={handleChange} 
+            min={0} 
+            max={100} 
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="products">Products (comma separated)</Label>
         <Input 
@@ -203,6 +259,7 @@ const Leads: React.FC = () => {
 
   // Refresh data when the component mounts
   useEffect(() => {
+    console.log("Leads component mounted, refreshing data...");
     refreshData();
   }, [refreshData]);
 
@@ -221,10 +278,15 @@ const Leads: React.FC = () => {
   const handleAddLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
     console.log("Adding lead:", leadData);
     try {
-      await addLead(leadData);
+      const newLead = await addLead(leadData);
+      console.log("Lead added successfully:", newLead);
       setIsAddDialogOpen(false);
       // Force refresh to ensure the new lead is displayed
-      refreshData();
+      await refreshData();
+      toast({
+        title: "Success",
+        description: "Lead added successfully",
+      });
     } catch (error) {
       console.error("Error in handleAddLead:", error);
       toast({

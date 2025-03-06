@@ -107,6 +107,7 @@ export class CRMService {
 
   static async getLeads(): Promise<Lead[]> {
     try {
+      console.log("Fetching leads from Supabase...");
       const { data, error } = await supabase
         .from('leads')
         .select('*')
@@ -117,7 +118,9 @@ export class CRMService {
         return [];
       }
       
-      return data.map(lead => ({
+      console.log("Raw leads data from Supabase:", data);
+      
+      const leads = data.map(lead => ({
         ...lead,
         id: lead.id,
         employeeName: lead.employee_name || '',
@@ -129,6 +132,9 @@ export class CRMService {
         last_contact: lead.last_contact,
         next_follow_up: lead.next_follow_up
       }));
+      
+      console.log("Processed leads:", leads);
+      return leads;
     } catch (error) {
       console.error('Error in getLeads:', error);
       return [];

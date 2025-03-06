@@ -31,7 +31,7 @@ interface CRMContextType {
   addDocument: (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => Document;
   updateDocument: (id: string, updates: Partial<Document>) => Document | null;
   deleteDocument: (id: string) => boolean;
-  refreshData: () => void;
+  refreshData: () => Promise<void>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
@@ -45,9 +45,12 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshData = async () => {
     try {
+      console.log("Refreshing CRM data...");
       const fetchedLeads = await CRMService.getLeads();
       const fetchedManufacturers = await CRMService.getManufacturers();
       const fetchedOrders = await CRMService.getOrders();
+      
+      console.log("Fetched leads:", fetchedLeads);
       
       setLeads(fetchedLeads);
       setManufacturers(fetchedManufacturers);
@@ -71,10 +74,12 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addLead = async (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      console.log("Adding lead with data:", lead);
+      
       const newLead = await CRMService.addLead(lead);
       console.log("New lead created:", newLead);
       
-      // Immediately update the local state before refreshing data
+      // Immediately update the local state
       setLeads(prevLeads => [...prevLeads, newLead]);
       
       toast({
