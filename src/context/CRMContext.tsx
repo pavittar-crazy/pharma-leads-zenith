@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   CRMService, 
@@ -5,7 +6,7 @@ import {
   Manufacturer, 
   Order, 
   Product,
-  Document // Assuming a Document type exists
+  Document
 } from '../services/crmService';
 
 interface CRMContextType {
@@ -13,22 +14,22 @@ interface CRMContextType {
   manufacturers: Manufacturer[];
   orders: Order[];
   products: Product[];
-  documents: Document[]; // Added documents
-  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateLead: (id: string, updates: Partial<Lead>) => void;
-  deleteLead: (id: string) => void;
-  addManufacturer: (manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>) => void;
-  updateManufacturer: (id: string, updates: Partial<Manufacturer>) => void;
-  deleteManufacturer: (id: string) => void;
-  addProduct: (product: Omit<Product, 'id'>) => void;
-  updateProduct: (id: string, updates: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
-  addOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateOrder: (id: string, updates: Partial<Order>) => void;
-  deleteOrder: (id: string) => void;
-  addDocument: (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => void; // Added document methods
-  updateDocument: (id: string, updates: Partial<Document>) => void; // Added document methods
-  deleteDocument: (id: string) => void; // Added document methods
+  documents: Document[];
+  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Lead>;
+  updateLead: (id: string, updates: Partial<Lead>) => Promise<Lead>;
+  deleteLead: (id: string) => Promise<boolean>;
+  addManufacturer: (manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>) => Promise<Manufacturer>;
+  updateManufacturer: (id: string, updates: Partial<Manufacturer>) => Promise<Manufacturer>;
+  deleteManufacturer: (id: string) => Promise<boolean>;
+  addProduct: (product: Omit<Product, 'id'>) => Product;
+  updateProduct: (id: string, updates: Partial<Product>) => Product | null;
+  deleteProduct: (id: string) => boolean;
+  addOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Order>;
+  updateOrder: (id: string, updates: Partial<Order>) => Promise<Order>;
+  deleteOrder: (id: string) => Promise<boolean>;
+  addDocument: (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => Document;
+  updateDocument: (id: string, updates: Partial<Document>) => Document | null;
+  deleteDocument: (id: string) => boolean;
   refreshData: () => void;
 }
 
@@ -39,14 +40,22 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]); // Added documents state
+  const [documents, setDocuments] = useState<Document[]>([]);
 
-  const refreshData = () => {
-    setLeads(CRMService.getLeads());
-    setManufacturers(CRMService.getManufacturers());
-    setOrders(CRMService.getOrders());
-    setProducts(CRMService.getProducts());
-    setDocuments(CRMService.getDocuments()); // Added documents refresh
+  const refreshData = async () => {
+    try {
+      const fetchedLeads = await CRMService.getLeads();
+      const fetchedManufacturers = await CRMService.getManufacturers();
+      const fetchedOrders = await CRMService.getOrders();
+      
+      setLeads(fetchedLeads);
+      setManufacturers(fetchedManufacturers);
+      setOrders(fetchedOrders);
+      setProducts(CRMService.getProducts());
+      setDocuments(CRMService.getDocuments());
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    }
   };
 
   useEffect(() => {
@@ -54,79 +63,94 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshData();
   }, []);
 
-  const addLead = (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
-    CRMService.addLead(lead);
-    refreshData();
+  const addLead = async (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newLead = await CRMService.addLead(lead);
+    await refreshData();
+    return newLead;
   };
 
-  const updateLead = (id: string, updates: Partial<Lead>) => {
-    CRMService.updateLead(id, updates);
-    refreshData();
+  const updateLead = async (id: string, updates: Partial<Lead>) => {
+    const updatedLead = await CRMService.updateLead(id, updates);
+    await refreshData();
+    return updatedLead;
   };
 
-  const deleteLead = (id: string) => {
-    CRMService.deleteLead(id);
-    refreshData();
+  const deleteLead = async (id: string) => {
+    const result = await CRMService.deleteLead(id);
+    await refreshData();
+    return result;
   };
 
-  const addManufacturer = (manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>) => {
-    CRMService.addManufacturer(manufacturer);
-    refreshData();
+  const addManufacturer = async (manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>) => {
+    const newManufacturer = await CRMService.addManufacturer(manufacturer);
+    await refreshData();
+    return newManufacturer;
   };
 
-  const updateManufacturer = (id: string, updates: Partial<Manufacturer>) => {
-    CRMService.updateManufacturer(id, updates);
-    refreshData();
+  const updateManufacturer = async (id: string, updates: Partial<Manufacturer>) => {
+    const updatedManufacturer = await CRMService.updateManufacturer(id, updates);
+    await refreshData();
+    return updatedManufacturer;
   };
 
-  const deleteManufacturer = (id: string) => {
-    CRMService.deleteManufacturer(id);
-    refreshData();
+  const deleteManufacturer = async (id: string) => {
+    const result = await CRMService.deleteManufacturer(id);
+    await refreshData();
+    return result;
   };
 
   const addProduct = (product: Omit<Product, 'id'>) => {
-    CRMService.addProduct(product);
+    const newProduct = CRMService.addProduct(product);
     refreshData();
+    return newProduct;
   };
 
   const updateProduct = (id: string, updates: Partial<Product>) => {
-    CRMService.updateProduct(id, updates);
+    const updatedProduct = CRMService.updateProduct(id, updates);
     refreshData();
+    return updatedProduct;
   };
 
   const deleteProduct = (id: string) => {
-    CRMService.deleteProduct(id);
+    const result = CRMService.deleteProduct(id);
     refreshData();
+    return result;
   };
 
-  const addOrder = (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
-    CRMService.addOrder(order);
-    refreshData();
+  const addOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newOrder = await CRMService.addOrder(order);
+    await refreshData();
+    return newOrder;
   };
 
-  const updateOrder = (id: string, updates: Partial<Order>) => {
-    CRMService.updateOrder(id, updates);
-    refreshData();
+  const updateOrder = async (id: string, updates: Partial<Order>) => {
+    const updatedOrder = await CRMService.updateOrder(id, updates);
+    await refreshData();
+    return updatedOrder;
   };
 
-  const deleteOrder = (id: string) => {
-    CRMService.deleteOrder(id);
-    refreshData();
+  const deleteOrder = async (id: string) => {
+    const result = await CRMService.deleteOrder(id);
+    await refreshData();
+    return result;
   };
 
-  const addDocument = (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => { // Added document methods
-    CRMService.addDocument(document); // Assuming CRMService.addDocument exists
+  const addDocument = (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newDocument = CRMService.addDocument(document);
     refreshData();
+    return newDocument;
   };
 
-  const updateDocument = (id: string, updates: Partial<Document>) => { // Added document methods
-    CRMService.updateDocument(id, updates); // Assuming CRMService.updateDocument exists
+  const updateDocument = (id: string, updates: Partial<Document>) => {
+    const updatedDocument = CRMService.updateDocument(id, updates);
     refreshData();
+    return updatedDocument;
   };
 
-  const deleteDocument = (id: string) => { // Added document methods
-    CRMService.deleteDocument(id); // Assuming CRMService.deleteDocument exists
+  const deleteDocument = (id: string) => {
+    const result = CRMService.deleteDocument(id);
     refreshData();
+    return result;
   };
 
   return (

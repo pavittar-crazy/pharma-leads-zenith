@@ -1,132 +1,128 @@
-# Welcome to your Lovable project
 
-## Project info
+# Pavittar Pharmaceuticals CRM
 
-**URL**: https://lovable.dev/projects/8da43188-908a-4e8a-b272-31327e95c3a9
+A comprehensive Customer Relationship Management system for Pavittar Pharmaceuticals, built with React, TypeScript, Supabase, and Shadcn UI.
 
-## Codebase Overview
+## Project Overview
 
-This is a Pharmaceutical CRM application built with React, TypeScript, and Vite. It uses shadcn-ui components with Tailwind CSS for styling, and Supabase for backend services.
+The Pavittar Pharmaceuticals CRM is a full-featured platform designed to manage leads, manufacturers, orders, documents, and more. It comes with user authentication, role-based access control, and a responsive UI.
 
-### Key Files and Directories
+### Key Features
 
-- **`src/App.tsx`**: Main application component that sets up routing with React Router, authentication context, and layout components including Navbar and Sidebar.
-- **`src/main.tsx`**: Entry point that renders the App component into the DOM.
-- **`src/context/AuthContext.tsx`**: Manages authentication state throughout the application.
-- **`src/components/auth/PrivateRoute.tsx`**: Protects routes that require authentication.
-- **`src/components/layout/`**: Contains Navbar and Sidebar components for application navigation.
-- **`src/pages/`**: Contains all page components including:
-  - `Index.tsx`: Dashboard home page
-  - `Leads.tsx`: Lead management page
-  - `LeadManagement.tsx`: Detailed lead operations
-  - `Manufacturers.tsx`: Manufacturer management
-  - `Orders.tsx`: Order management
-  - `Performance.tsx`: Performance analytics
-  - `Settings.tsx`: Application settings
-  - `Auth.tsx`: Authentication pages (login, register, etc.)
-  - `NotFound.tsx`: 404 page
+- **Authentication System**: Secure login/signup with email and password
+- **Role-Based Access Control**: Different permission levels for admins and regular employees
+- **Lead Management**: Track and manage potential customers through the sales pipeline
+- **Manufacturer Management**: Maintain relationships with pharmaceutical manufacturers
+- **Order Processing**: Create and manage customer orders
+- **Calendar & Scheduling**: Plan meetings and events with a full-featured calendar
+- **Messaging System**: Internal communication between team members
+- **Dashboard & Analytics**: Visual representation of key business metrics
 
-### UI Components
+## Tech Stack
 
-- **`src/components/ui/`**: Contains shadcn-ui components like calendar, collapsible, aspect-ratio, etc.
+- **Frontend**: React, TypeScript, Tailwind CSS, Shadcn UI
+- **Backend**: Supabase (PostgreSQL, Authentication, Storage)
+- **State Management**: React Context API, TanStack Query
+- **Routing**: React Router v6
+- **Forms**: React Hook Form with Zod validation
+- **Charts**: Recharts for data visualization
 
-### Configuration Files
+## Database Structure
 
-- **`tsconfig.app.json`**: TypeScript configuration for the application.
-- **`components.json`**: Configuration for shadcn-ui components.
-- **`eslint.config.js`**: ESLint configuration for code linting.
-- **`tailwind.config.ts`**: Tailwind CSS configuration.
+The CRM uses the following main tables in Supabase:
 
-### Known Issues and Solutions
+- **leads**: Tracks potential customers and sales opportunities
+- **manufacturers**: Stores pharmaceutical manufacturer details
+- **orders**: Manages customer orders and fulfillment
+- **profiles**: Stores user profile information
+- **user_roles**: Manages role-based permissions
+- **employees**: Stores employee-specific information
+- **tasks**: Tracks tasks assigned to employees
+- **events**: Stores calendar events and schedules
 
-1. **Authentication Error**: 
-   - **Issue**: Error fetching user role as seen in console logs: `"Error fetching user role: {"code":"PGRST116","details":"The result contains 0 rows"..."`
-   - **Solution**: Verify that your Supabase database has a roles table and that users are properly assigned roles upon registration. Check your Supabase schema and add appropriate role assignments in your authentication flow.
+## Authentication & Authorization
 
-2. **CSS Styling Conflicts**:
-   - **Issue**: `App.css` contains global styles that may conflict with Tailwind and shadcn-ui.
-   - **Solution**: Consider removing or refactoring `App.css` as it has potential conflicts with the Tailwind utility classes. Prefer using Tailwind classes or component-specific styles.
+- Authentication is handled through Supabase Auth
+- Row-Level Security (RLS) policies control data access
+- Each user is assigned a role (admin, manager, sales, employee)
+- Custom security definer functions ensure proper data access
 
-3. **Incomplete Calendar Component**:
-   - **Issue**: The `calendar.tsx` file appears to be truncated, showing only part of the component.
-   - **Solution**: Update the calendar component with the complete implementation, likely missing the component declaration and imports.
+## Project Structure
 
-4. **Sidebar State Management**:
-   - **Issue**: Sidebar state is managed at the App level which could cause performance issues in larger applications.
-   - **Solution**: Consider using context or more localized state management for sidebar visibility.
-
-5. **Missing API Service Layer**:
-   - **Issue**: Direct API calls might be scattered throughout components.
-   - **Solution**: Implement a dedicated service layer in `src/services/` to centralize API calls and handle errors consistently.
-
-### Development Recommendations
-
-1. Complete the error handling for authentication flows
-2. Implement proper loading states throughout the application
-3. Add form validation using Zod and React Hook Form
-4. Set up proper TypeScript interfaces for all data models
-5. Add unit and integration tests
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/8da43188-908a-4e8a-b272-31327e95c3a9) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+src/
+├── components/      # UI components
+│   ├── auth/        # Authentication components
+│   ├── layout/      # Layout components (Navbar, Sidebar)
+│   ├── ui/          # Shadcn UI components
+│   └── ...          # Feature-specific components
+├── context/         # React Context providers
+├── hooks/           # Custom React hooks
+├── integrations/    # Third-party integrations
+├── lib/             # Utility functions and constants
+├── pages/           # Route pages
+└── services/        # API service functions
 ```
 
-**Edit a file directly in GitHub**
+## Backend Services
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The CRM connects to Supabase for:
 
-**Use GitHub Codespaces**
+1. **Authentication**: User management and secure authentication flows
+2. **Database**: PostgreSQL database with Row-Level Security
+3. **Storage**: Document and image storage
+4. **Functions**: Backend edge functions for complex operations
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Getting Started
 
-## What technologies are used for this project?
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Set up a Supabase project and update configuration
+4. Run the development server with `npm run dev`
 
-This project is built with .
+## Authentication Setup
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The CRM uses email/password authentication through Supabase. To set up admin users:
 
-## How can I deploy this project?
+1. Create users through the signup form or Supabase dashboard
+2. Manually assign admin roles through Supabase SQL editor:
+   ```sql
+   INSERT INTO public.user_roles (user_id, role)
+   VALUES ('USER_ID', 'admin');
+   ```
 
-Simply open [Lovable](https://lovable.dev/projects/8da43188-908a-4e8a-b272-31327e95c3a9) and click on Share -> Publish.
+## Admin Features
 
-## I want to use a custom domain - is that possible?
+Admin users (Ankit, Preeti) have access to:
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+- Assigning tasks to employees
+- Managing employee calendars and schedules
+- Viewing all leads and orders across the organization
+- Configuring system settings
+- Managing user roles and permissions
+
+## Development Roadmap
+
+Planned features and improvements:
+
+- More sophisticated reporting and analytics
+- Mobile application for field sales team
+- Integration with additional third-party services
+- Enhanced document management system
+- Automated email campaigns
+
+## Connected Database
+
+The CRM connects to Supabase with proper Row-Level Security policies ensuring that:
+
+- Users can only access data they are authorized to see
+- Admins have full access to all data
+- Data modifications are properly logged and tracked
+
+## License
+
+Proprietary software for Pavittar Pharmaceuticals.
+
+## Credits
+
+Developed by Rishul Chanana

@@ -1,462 +1,580 @@
 
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 
-// Define types for our CRM data
 export interface Lead {
   id: string;
   name: string;
   company: string;
   email: string;
   phone: string;
-  location: string;
-  status: string;
-  source: string;
-  score: number;
-  lastContact: string;
-  nextFollowUp?: string;
-  notes?: string;
-  assignedTo?: string;
-  priority: string;
+  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed';
+  products: string[];
+  value: number;
+  notes: string;
   createdAt: string;
   updatedAt: string;
+  user_id: string;
 }
 
 export interface Manufacturer {
   id: string;
   name: string;
-  location: string;
-  products: string[];
-  minOrderValue: number;
-  certifications: string[];
   contactPerson: string;
   email: string;
   phone: string;
+  location: string;
+  products: string[];
+  certifications: string[];
+  min_order_value: number;
   rating: number;
   status: string;
   createdAt: string;
   updatedAt: string;
+  user_id: string;
 }
 
 export interface Product {
   id: string;
   name: string;
   description: string;
-  price: number;
-  manufacturerId: string;
+  manufacturer: string;
   category: string;
-  inStock: boolean;
-  minOrderQuantity: number;
-  leadTime: number;
-  imageUrl?: string;
+  price: number;
+  stock: number;
+}
+
+export interface OrderProduct {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
 }
 
 export interface Order {
   id: string;
-  clientId: string;
-  clientName: string;
-  clientCompany: string;
-  products: {
-    id: string;
-    name: string;
-    quantity: number;
-    price: number;
-  }[];
-  totalValue: number;
-  status: string;
-  manufacturerId: string;
-  paymentStatus: string;
-  orderDate: string;
-  deliveryDate?: string;
-  trackingInfo?: string;
+  leadId: string;
+  leadName: string;
+  products: OrderProduct[];
+  totalAmount: number;
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  paymentStatus: 'unpaid' | 'partial' | 'paid';
   createdAt: string;
   updatedAt: string;
+  user_id: string;
 }
 
 export interface Document {
   id: string;
-  name: string;
+  title: string;
+  description: string;
+  url: string;
   type: string;
   relatedTo: string;
   relatedId: string;
-  fileUrl: string;
-  size: number;
-  status: string;
   createdAt: string;
   updatedAt: string;
+  user_id: string;
 }
 
-const STORAGE_KEYS = {
-  LEADS: 'crm_leads',
-  MANUFACTURERS: 'crm_manufacturers',
-  PRODUCTS: 'crm_products',
-  ORDERS: 'crm_orders',
-  DOCUMENTS: 'crm_documents',
-};
+export class CRMService {
+  static mockData: {
+    leads: Lead[];
+    manufacturers: Manufacturer[];
+    products: Product[];
+    orders: Order[];
+    documents: Document[];
+  } = {
+    leads: [],
+    manufacturers: [],
+    products: [],
+    orders: [],
+    documents: []
+  };
 
-// Initialize local storage or get existing data
-const getStorageData = <T>(key: string, initialValue: T[]): T[] => {
-  if (typeof window === 'undefined') {
-    return initialValue;
+  static initializeData() {
+    // Initialize with empty arrays, data will be fetched from Supabase
   }
-  
-  try {
-    const item = window.localStorage.getItem(key);
-    return item ? JSON.parse(item) : initialValue;
-  } catch (error) {
-    console.error(`Error reading localStorage key "${key}":`, error);
-    return initialValue;
-  }
-};
 
-// Save data to local storage
-const setStorageData = <T>(key: string, value: T[]): void => {
-  try {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    }
-  } catch (error) {
-    console.error(`Error setting localStorage key "${key}":`, error);
-  }
-};
-
-// Sample data
-const sampleLeads: Lead[] = [
-  {
-    id: uuidv4(),
-    name: 'Dr. Rajesh Kumar',
-    company: 'City Hospital',
-    email: 'rajesh.kumar@cityhospital.com',
-    phone: '+91 98765 43210',
-    status: 'qualified',
-    source: 'Referral',
-    score: 85,
-    lastContact: new Date().toISOString(),
-    notes: 'Interested in bulk orders for hospital pharmacy',
-    priority: 'high',
-    location: 'Mumbai',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: uuidv4(),
-    name: 'Dr. Priya Sharma',
-    company: 'Wellness Clinic',
-    email: 'priya.s@wellnessclinic.com',
-    phone: '+91 87654 32109',
-    status: 'contacted',
-    source: 'Conference',
-    score: 72,
-    lastContact: new Date().toISOString(),
-    notes: 'Follow up next week about vitamin packages',
-    priority: 'medium',
-    location: 'Delhi',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
-
-const sampleManufacturers: Manufacturer[] = [
-  {
-    id: uuidv4(),
-    name: 'MediChem Industries',
-    contactPerson: 'Vikram Mehta',
-    email: 'vikram@medichem.com',
-    phone: '+91 99887 76655',
-    location: 'Mumbai, Maharashtra',
-    products: ['Antibiotics', 'Analgesics', 'Anti-inflammatory'],
-    minOrderValue: 10000,
-    certifications: ['ISO', 'GMP'],
-    rating: 4.5,
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: uuidv4(),
-    name: 'NatureCare Pharma',
-    contactPerson: 'Anita Desai',
-    email: 'anita@naturecare.com',
-    phone: '+91 88776 65544',
-    location: 'Ahmedabad, Gujarat',
-    products: ['Ayurvedic Medicines', 'Herbal Supplements'],
-    minOrderValue: 5000,
-    certifications: ['Ayush Premium'],
-    rating: 4.2,
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
-
-const sampleProducts: Product[] = [
-  {
-    id: uuidv4(),
-    name: 'Pavitol 500mg',
-    manufacturerId: 'MediChem Industries',
-    category: 'Pain Relief',
-    price: 120,
-    description: 'Effective pain relief for moderate to severe pain',
-    inStock: true,
-    minOrderQuantity: 100,
-    leadTime: 7
-  },
-  {
-    id: uuidv4(),
-    name: 'ImmuBoost Plus',
-    manufacturerId: 'NatureCare Pharma',
-    category: 'Supplements',
-    price: 350,
-    description: 'Immunity boosting multivitamin supplement',
-    inStock: true,
-    minOrderQuantity: 50,
-    leadTime: 5
-  }
-];
-
-const sampleOrders: Order[] = [
-  {
-    id: uuidv4(),
-    clientId: sampleLeads[0].id,
-    clientName: sampleLeads[0].name,
-    clientCompany: sampleLeads[0].company,
-    products: [
-      {
-        id: sampleProducts[0].id,
-        name: sampleProducts[0].name,
-        quantity: 100,
-        price: sampleProducts[0].price
+  // Leads
+  static async getLeads(): Promise<Lead[]> {
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching leads:', error);
+        return [];
       }
-    ],
-    totalValue: 100 * sampleProducts[0].price,
-    status: 'confirmed',
-    manufacturerId: 'MediChem Industries',
-    paymentStatus: 'paid',
-    orderDate: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+      
+      return data.map(lead => ({
+        ...lead,
+        id: lead.id,
+        products: lead.products || [],
+        value: lead.value || 0,
+        createdAt: lead.created_at,
+        updatedAt: lead.updated_at
+      }));
+    } catch (error) {
+      console.error('Error in getLeads:', error);
+      return [];
+    }
   }
-];
 
-// CRM Service
-export const CRMService = {
-  initializeData: () => {
-    // Initialize leads if not exists
-    if (!localStorage.getItem(STORAGE_KEYS.LEADS)) {
-      localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify(sampleLeads));
-    }
-    
-    // Initialize manufacturers if not exists
-    if (!localStorage.getItem(STORAGE_KEYS.MANUFACTURERS)) {
-      localStorage.setItem(STORAGE_KEYS.MANUFACTURERS, JSON.stringify(sampleManufacturers));
-    }
-    
-    // Initialize products if not exists
-    if (!localStorage.getItem(STORAGE_KEYS.PRODUCTS)) {
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(sampleProducts));
-    }
-    
-    // Initialize orders if not exists
-    if (!localStorage.getItem(STORAGE_KEYS.ORDERS)) {
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(sampleOrders));
-    }
-    
-    // Initialize documents if not exists
-    if (!localStorage.getItem(STORAGE_KEYS.DOCUMENTS)) {
-      localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify([]));
-    }
-  },
-  
-  // Lead methods
-  getLeads: (): Lead[] => {
-    const leads = localStorage.getItem(STORAGE_KEYS.LEADS);
-    return leads ? JSON.parse(leads) : [];
-  },
-  
-  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const leads = CRMService.getLeads();
-    const now = new Date().toISOString();
-    
-    const newLead: Lead = {
-      ...lead,
-      id: uuidv4(),
-      createdAt: now,
-      updatedAt: now,
-    };
-    
-    localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify([...leads, newLead]));
-    return newLead;
-  },
-  
-  updateLead: (id: string, updates: Partial<Lead>) => {
-    const leads = CRMService.getLeads();
-    const leadIndex = leads.findIndex(lead => lead.id === id);
-    
-    if (leadIndex !== -1) {
-      leads[leadIndex] = {
-        ...leads[leadIndex],
-        ...updates,
-        updatedAt: new Date().toISOString(),
+  static async addLead(lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lead> {
+    try {
+      // Make sure user_id is included
+      const newLead = {
+        ...lead,
+        user_id: (await supabase.auth.getUser()).data.user?.id || '',
+        products: lead.products || [],
+        value: lead.value || 0
       };
-      
-      localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify(leads));
-      return leads[leadIndex];
-    }
-    
-    return null;
-  },
-  
-  deleteLead: (id: string) => {
-    const leads = CRMService.getLeads();
-    const filteredLeads = leads.filter(lead => lead.id !== id);
-    
-    localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify(filteredLeads));
-    return true;
-  },
-  
-  // Manufacturer methods
-  getManufacturers: (): Manufacturer[] => {
-    const manufacturers = localStorage.getItem(STORAGE_KEYS.MANUFACTURERS);
-    return manufacturers ? JSON.parse(manufacturers) : [];
-  },
-  
-  addManufacturer: (manufacturer: Omit<Manufacturer, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const manufacturers = CRMService.getManufacturers();
-    const now = new Date().toISOString();
-    
-    const newManufacturer: Manufacturer = {
-      ...manufacturer,
-      id: uuidv4(),
-      createdAt: now,
-      updatedAt: now,
-    };
-    
-    localStorage.setItem(STORAGE_KEYS.MANUFACTURERS, JSON.stringify([...manufacturers, newManufacturer]));
-    return newManufacturer;
-  },
-  
-  updateManufacturer: (id: string, updates: Partial<Manufacturer>) => {
-    const manufacturers = CRMService.getManufacturers();
-    const index = manufacturers.findIndex(m => m.id === id);
-    
-    if (index !== -1) {
-      manufacturers[index] = {
-        ...manufacturers[index],
-        ...updates,
-        updatedAt: new Date().toISOString(),
+
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([{
+          name: newLead.name,
+          company: newLead.company,
+          email: newLead.email,
+          phone: newLead.phone,
+          status: newLead.status,
+          products: newLead.products,
+          value: newLead.value,
+          notes: newLead.notes,
+          user_id: newLead.user_id
+        }])
+        .select();
+
+      if (error) {
+        console.error('Error adding lead:', error);
+        throw error;
+      }
+
+      return {
+        ...data[0],
+        products: data[0].products || [],
+        createdAt: data[0].created_at,
+        updatedAt: data[0].updated_at
       };
-      
-      localStorage.setItem(STORAGE_KEYS.MANUFACTURERS, JSON.stringify(manufacturers));
-      return manufacturers[index];
+    } catch (error) {
+      console.error('Error in addLead:', error);
+      throw error;
     }
-    
-    return null;
-  },
-  
-  deleteManufacturer: (id: string) => {
-    const manufacturers = CRMService.getManufacturers();
-    const filtered = manufacturers.filter(m => m.id !== id);
-    
-    localStorage.setItem(STORAGE_KEYS.MANUFACTURERS, JSON.stringify(filtered));
-    return true;
-  },
-  
-  // Order methods
-  getOrders: (): Order[] => {
-    const orders = localStorage.getItem(STORAGE_KEYS.ORDERS);
-    return orders ? JSON.parse(orders) : [];
-  },
-  
-  addOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const orders = CRMService.getOrders();
-    const now = new Date().toISOString();
-    
-    const newOrder: Order = {
-      ...order,
-      id: uuidv4(),
-      createdAt: now,
-      updatedAt: now,
-    };
-    
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify([...orders, newOrder]));
-    return newOrder;
-  },
-  
-  updateOrder: (id: string, updates: Partial<Order>) => {
-    const orders = CRMService.getOrders();
-    const index = orders.findIndex(o => o.id === id);
-    
-    if (index !== -1) {
-      orders[index] = {
-        ...orders[index],
-        ...updates,
-        updatedAt: new Date().toISOString(),
+  }
+
+  static async updateLead(id: string, updates: Partial<Lead>): Promise<Lead> {
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .update({
+          name: updates.name,
+          company: updates.company,
+          email: updates.email,
+          phone: updates.phone,
+          status: updates.status,
+          products: updates.products,
+          value: updates.value,
+          notes: updates.notes
+        })
+        .eq('id', id)
+        .select();
+
+      if (error) {
+        console.error('Error updating lead:', error);
+        throw error;
+      }
+
+      return {
+        ...data[0],
+        products: data[0].products || [],
+        createdAt: data[0].created_at,
+        updatedAt: data[0].updated_at
       };
-      
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-      return orders[index];
+    } catch (error) {
+      console.error('Error in updateLead:', error);
+      throw error;
     }
+  }
+
+  static async deleteLead(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting lead:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in deleteLead:', error);
+      return false;
+    }
+  }
+
+  // Manufacturers
+  static async getManufacturers(): Promise<Manufacturer[]> {
+    try {
+      const { data, error } = await supabase
+        .from('manufacturers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching manufacturers:', error);
+        return [];
+      }
+      
+      return data.map(manufacturer => ({
+        ...manufacturer,
+        id: manufacturer.id,
+        contactPerson: manufacturer.contact_person,
+        min_order_value: manufacturer.min_order_value || 0,
+        products: manufacturer.products || [],
+        certifications: manufacturer.certifications || [],
+        createdAt: manufacturer.created_at,
+        updatedAt: manufacturer.updated_at
+      }));
+    } catch (error) {
+      console.error('Error in getManufacturers:', error);
+      return [];
+    }
+  }
+
+  static async addManufacturer(manufacturer: Omit<Manufacturer, 'id' | 'createdAt'>): Promise<Manufacturer> {
+    try {
+      // Make sure user_id is included
+      const newManufacturer = {
+        ...manufacturer,
+        user_id: (await supabase.auth.getUser()).data.user?.id || '',
+        products: manufacturer.products || [],
+        certifications: manufacturer.certifications || []
+      };
+
+      const { data, error } = await supabase
+        .from('manufacturers')
+        .insert([{
+          name: newManufacturer.name,
+          contact_person: newManufacturer.contactPerson,
+          email: newManufacturer.email,
+          phone: newManufacturer.phone,
+          location: newManufacturer.location,
+          products: newManufacturer.products,
+          certifications: newManufacturer.certifications,
+          min_order_value: newManufacturer.min_order_value,
+          rating: newManufacturer.rating,
+          status: newManufacturer.status,
+          user_id: newManufacturer.user_id
+        }])
+        .select();
+
+      if (error) {
+        console.error('Error adding manufacturer:', error);
+        throw error;
+      }
+
+      return {
+        ...data[0],
+        contactPerson: data[0].contact_person,
+        min_order_value: data[0].min_order_value || 0,
+        products: data[0].products || [],
+        certifications: data[0].certifications || [],
+        createdAt: data[0].created_at,
+        updatedAt: data[0].updated_at
+      };
+    } catch (error) {
+      console.error('Error in addManufacturer:', error);
+      throw error;
+    }
+  }
+
+  static async updateManufacturer(id: string, updates: Partial<Manufacturer>): Promise<Manufacturer> {
+    try {
+      const { data, error } = await supabase
+        .from('manufacturers')
+        .update({
+          name: updates.name,
+          contact_person: updates.contactPerson,
+          email: updates.email,
+          phone: updates.phone,
+          location: updates.location,
+          products: updates.products,
+          certifications: updates.certifications,
+          min_order_value: updates.min_order_value,
+          rating: updates.rating,
+          status: updates.status
+        })
+        .eq('id', id)
+        .select();
+
+      if (error) {
+        console.error('Error updating manufacturer:', error);
+        throw error;
+      }
+
+      return {
+        ...data[0],
+        contactPerson: data[0].contact_person,
+        min_order_value: data[0].min_order_value || 0,
+        products: data[0].products || [],
+        certifications: data[0].certifications || [],
+        createdAt: data[0].created_at,
+        updatedAt: data[0].updated_at
+      };
+    } catch (error) {
+      console.error('Error in updateManufacturer:', error);
+      throw error;
+    }
+  }
+
+  static async deleteManufacturer(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('manufacturers')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting manufacturer:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in deleteManufacturer:', error);
+      return false;
+    }
+  }
+
+  // Products
+  static getProducts(): Product[] {
+    // Mock implementation for now
+    return this.mockData.products;
+  }
+
+  static addProduct(product: Omit<Product, 'id'>): Product {
+    const newProduct = {
+      ...product,
+      id: uuidv4()
+    };
+    this.mockData.products.push(newProduct);
+    return newProduct;
+  }
+
+  static updateProduct(id: string, updates: Partial<Product>): Product | null {
+    const index = this.mockData.products.findIndex(p => p.id === id);
+    if (index === -1) return null;
     
-    return null;
-  },
-  
-  deleteOrder: (id: string) => {
-    const orders = CRMService.getOrders();
-    const filtered = orders.filter(o => o.id !== id);
+    const updatedProduct = {
+      ...this.mockData.products[index],
+      ...updates
+    };
+    this.mockData.products[index] = updatedProduct;
+    return updatedProduct;
+  }
+
+  static deleteProduct(id: string): boolean {
+    const index = this.mockData.products.findIndex(p => p.id === id);
+    if (index === -1) return false;
     
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(filtered));
+    this.mockData.products.splice(index, 1);
     return true;
-  },
-  
-  // Product methods
-  getProducts: (): Product[] => {
-    const products = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-    return products ? JSON.parse(products) : [];
-  },
-  
-  // Document methods
-  getDocuments: (): Document[] => {
-    const documents = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
-    return documents ? JSON.parse(documents) : [];
-  },
-  
-  addDocument: (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const documents = CRMService.getDocuments();
+  }
+
+  // Orders
+  static async getOrders(): Promise<Order[]> {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, leads!orders_lead_id_fkey(name)')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching orders:', error);
+        return [];
+      }
+      
+      return data.map(order => ({
+        ...order,
+        id: order.id,
+        leadId: order.lead_id,
+        leadName: order.leads?.name || 'Unknown',
+        products: order.products || [],
+        totalAmount: order.total_value || 0,
+        paymentStatus: order.payment_status,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at
+      }));
+    } catch (error) {
+      console.error('Error in getOrders:', error);
+      return [];
+    }
+  }
+
+  static async addOrder(order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Promise<Order> {
+    try {
+      // Make sure user_id is included
+      const newOrder = {
+        ...order,
+        user_id: (await supabase.auth.getUser()).data.user?.id || ''
+      };
+
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([{
+          lead_id: newOrder.leadId,
+          products: newOrder.products,
+          total_value: newOrder.totalAmount,
+          status: newOrder.status,
+          payment_status: newOrder.paymentStatus,
+          user_id: newOrder.user_id
+        }])
+        .select();
+
+      if (error) {
+        console.error('Error adding order:', error);
+        throw error;
+      }
+
+      // Fetch lead name
+      let leadName = 'Unknown';
+      if (data[0].lead_id) {
+        const { data: leadData } = await supabase
+          .from('leads')
+          .select('name')
+          .eq('id', data[0].lead_id)
+          .single();
+        
+        if (leadData) {
+          leadName = leadData.name;
+        }
+      }
+
+      return {
+        ...data[0],
+        leadId: data[0].lead_id,
+        leadName,
+        products: data[0].products || [],
+        totalAmount: data[0].total_value || 0,
+        paymentStatus: data[0].payment_status,
+        createdAt: data[0].created_at,
+        updatedAt: data[0].updated_at
+      };
+    } catch (error) {
+      console.error('Error in addOrder:', error);
+      throw error;
+    }
+  }
+
+  static async updateOrder(id: string, updates: Partial<Order>): Promise<Order> {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .update({
+          lead_id: updates.leadId,
+          products: updates.products,
+          total_value: updates.totalAmount,
+          status: updates.status,
+          payment_status: updates.paymentStatus
+        })
+        .eq('id', id)
+        .select();
+
+      if (error) {
+        console.error('Error updating order:', error);
+        throw error;
+      }
+
+      // Fetch lead name
+      let leadName = 'Unknown';
+      if (data[0].lead_id) {
+        const { data: leadData } = await supabase
+          .from('leads')
+          .select('name')
+          .eq('id', data[0].lead_id)
+          .single();
+        
+        if (leadData) {
+          leadName = leadData.name;
+        }
+      }
+
+      return {
+        ...data[0],
+        leadId: data[0].lead_id,
+        leadName,
+        products: data[0].products || [],
+        totalAmount: data[0].total_value || 0,
+        paymentStatus: data[0].payment_status,
+        createdAt: data[0].created_at,
+        updatedAt: data[0].updated_at
+      };
+    } catch (error) {
+      console.error('Error in updateOrder:', error);
+      throw error;
+    }
+  }
+
+  static async deleteOrder(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting order:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in deleteOrder:', error);
+      return false;
+    }
+  }
+
+  // Documents
+  static getDocuments(): Document[] {
+    return this.mockData.documents;
+  }
+
+  static addDocument(document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>): Document {
     const now = new Date().toISOString();
-    
-    const newDocument: Document = {
+    const newDocument = {
       ...document,
       id: uuidv4(),
       createdAt: now,
-      updatedAt: now,
+      updatedAt: now
     };
-    
-    localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify([...documents, newDocument]));
+    this.mockData.documents.push(newDocument);
     return newDocument;
-  },
-  
-  updateDocument: (id: string, updates: Partial<Document>) => {
-    const documents = CRMService.getDocuments();
-    const index = documents.findIndex(d => d.id === id);
+  }
+
+  static updateDocument(id: string, updates: Partial<Document>): Document | null {
+    const index = this.mockData.documents.findIndex(d => d.id === id);
+    if (index === -1) return null;
     
-    if (index !== -1) {
-      documents[index] = {
-        ...documents[index],
-        ...updates,
-        updatedAt: new Date().toISOString(),
-      };
-      
-      localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(documents));
-      return documents[index];
-    }
+    const updatedDocument = {
+      ...this.mockData.documents[index],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    this.mockData.documents[index] = updatedDocument;
+    return updatedDocument;
+  }
+
+  static deleteDocument(id: string): boolean {
+    const index = this.mockData.documents.findIndex(d => d.id === id);
+    if (index === -1) return false;
     
-    return null;
-  },
-  
-  deleteDocument: (id: string) => {
-    const documents = CRMService.getDocuments();
-    const filtered = documents.filter(d => d.id !== id);
-    
-    localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(filtered));
+    this.mockData.documents.splice(index, 1);
     return true;
   }
-};
+}
